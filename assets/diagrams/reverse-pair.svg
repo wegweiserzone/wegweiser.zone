@@ -1,0 +1,23 @@
+<svg viewBox="0 0 640 190" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="rp-tip" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L8 4 L0 8 z" fill="var(--signal)"/>
+    </marker>
+  </defs>
+  <text class="d-label" x="20" y="20" text-anchor="start">records</text>
+  <rect x="16" y="30" width="228" height="128" rx="4" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+  <text class="d-field" x="34" y="58">name = www.example.com.</text>
+  <text class="d-field" x="34" y="82">type = A</text>
+  <text class="d-field" x="34" y="106">rdata = 192.0.2.10</text>
+  <text class="d-field d-field--mute" x="34" y="138">managed_by = (none)</text>
+
+  <text class="d-label" x="396" y="20" text-anchor="start">records</text>
+  <rect x="392" y="30" width="236" height="128" rx="4" fill="var(--surface)" stroke="var(--signal)" stroke-width="1.5"/>
+  <text class="d-field" x="408" y="58">name = 10.2.0.192.in-addr.arpa.</text>
+  <text class="d-field" x="408" y="82">type = PTR</text>
+  <text class="d-field" x="408" y="106">rdata = www.example.com.</text>
+  <text class="d-field d-field--signal" x="408" y="138">managed_by = the A record</text>
+
+  <line x1="384" y1="100" x2="252" y2="100" stroke="var(--signal)" stroke-width="1.5" marker-end="url(#rp-tip)"/>
+  <text class="d-label d-label--signal" x="318" y="88" text-anchor="middle">generated from</text>
+</svg>

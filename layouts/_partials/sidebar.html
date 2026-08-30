@@ -1,0 +1,20 @@
+{{ $current := .RelPermalink }}
+{{ $docs := where site.RegularPages "Section" "docs" }}
+<aside class="sidebar">
+  {{ range site.Params.docGroups }}
+    {{ $group := . }}
+    {{ with where $docs "Params.group" $group }}
+      <h2>{{ $group }}</h2>
+      <ul>
+        {{ range sort . "Weight" }}
+          <li>
+            <a href="{{ .RelPermalink }}"
+               {{ if eq .RelPermalink $current }}aria-current="page"{{ end }}>
+              {{ .LinkTitle }}
+            </a>
+          </li>
+        {{ end }}
+      </ul>
+    {{ end }}
+  {{ end }}
+</aside>

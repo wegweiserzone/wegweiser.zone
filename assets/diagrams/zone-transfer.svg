@@ -1,0 +1,37 @@
+<svg viewBox="0 0 640 250" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="tip" viewBox="0 0 8 8" refX="7" refY="4"
+            markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L8 4 L0 8 z" fill="var(--ink-mute)"/>
+    </marker>
+    <marker id="tip-signal" viewBox="0 0 8 8" refX="7" refY="4"
+            markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L8 4 L0 8 z" fill="var(--signal)"/>
+    </marker>
+  </defs>
+
+  <rect x="46" y="34" width="184" height="66" rx="4"
+        fill="var(--surface)" stroke="var(--signal)" stroke-width="1.5"/>
+  <text class="d-name" x="138" y="61" text-anchor="middle">Wegweiser</text>
+  <text class="d-role" x="138" y="82" text-anchor="middle">primary</text>
+
+  <rect x="410" y="34" width="184" height="66" rx="4"
+        fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+  <text class="d-name" x="502" y="61" text-anchor="middle">ns2, anyone</text>
+  <text class="d-role" x="502" y="82" text-anchor="middle">secondary</text>
+
+  <line x1="238" y1="55" x2="400" y2="55"
+        stroke="var(--signal)" stroke-width="1.5" marker-end="url(#tip-signal)"/>
+  <text class="d-label d-label--signal" x="319" y="42" text-anchor="middle">AXFR / IXFR</text>
+
+  <line x1="400" y1="82" x2="238" y2="82"
+        stroke="var(--ink-mute)" stroke-width="1.5" marker-end="url(#tip)"/>
+  <text class="d-label" x="319" y="99" text-anchor="middle">NOTIFY</text>
+
+  <path d="M138 168 L138 108" stroke="var(--line)" stroke-width="1.5" marker-end="url(#tip)"/>
+  <path d="M502 168 L502 108" stroke="var(--line)" stroke-width="1.5" marker-end="url(#tip)"/>
+  <path d="M138 168 L502 168" stroke="var(--line)" stroke-width="1.5"/>
+  <path d="M320 168 L320 196" stroke="var(--line)" stroke-width="1.5"/>
+  <text class="d-label" x="320" y="161" text-anchor="middle">queries</text>
+  <text class="d-name" x="320" y="219" text-anchor="middle">the world</text>
+</svg>

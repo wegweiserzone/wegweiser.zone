@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="{{ .Site.Language.Locale | default "en" }}">
+  <head>
+    {{ partial "head.html" . }}
+  </head>
+  <body>
+    <a class="skip" href="#content">Skip to the content</a>
+    {{ partial "masthead.html" . }}
+    <main id="content" tabindex="-1">
+      {{ block "main" . }}{{ end }}
+    </main>
+    {{ partial "footer.html" . }}
+    {{ with resources.Get "js/enhance.js" }}
+      {{ $js := . | minify | fingerprint }}
+      <script src="{{ $js.RelPermalink }}" integrity="{{ $js.Data.Integrity }}" defer></script>
+    {{ end }}
+  </body>
+</html>

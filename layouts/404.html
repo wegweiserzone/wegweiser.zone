@@ -1,0 +1,23 @@
+{{/* Not content/404.md — that builds to /404/ and Hugo then emits no
+     /404.html for the server to use. */}}
+{{ define "main" }}
+  <div class="single">
+    <article class="prose">
+      <header>
+        <h1>Not here</h1>
+      </header>
+      <p>That address does not point at anything on this site.</p>
+      <p>
+        The pages this site has are on the <a href="/docs/">documentation index</a>, and
+        the search on <kbd>Ctrl</kbd><kbd>K</kbd> reaches all of them. If you followed a
+        link from somewhere and it landed here, the link is wrong and it is worth telling
+        me: <a href="https://github.com/wegweiserzone/wegweiser.zone/issues">open an
+        issue</a>, or write to <a href="mailto:tim@wegweiser.zone">tim@wegweiser.zone</a>.
+      </p>
+      <p>
+        If you were looking for the software rather than the words, it is on
+        <a href="https://github.com/wegweiserzone/wegweiser">GitHub</a>.
+      </p>
+    </article>
+  </div>
+{{ end }}

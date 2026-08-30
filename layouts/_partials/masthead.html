@@ -1,0 +1,8 @@
+<header class="masthead">
+  <a class="masthead__name" href="/">{{ partial "mark.html" . }}Wegweiser</a>
+  <nav>
+    <a href="/docs/" {{ if hasPrefix .RelPermalink "/docs/" }}aria-current="true"{{ end }}>Docs</a>
+    <a href="{{ .Site.Params.repository }}">Source</a>
+    <a href="{{ .Site.Params.repository }}/releases/latest">Releases</a>
+  </nav>
+</header>

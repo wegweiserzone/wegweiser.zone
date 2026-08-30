@@ -1,0 +1,25 @@
+<svg viewBox="0 0 700 180" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="rs-tip" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L8 4 L0 8 z" fill="var(--ink-mute)"/>
+    </marker>
+    <marker id="rs-tip-signal" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L8 4 L0 8 z" fill="var(--signal)"/>
+    </marker>
+  </defs>
+
+  <text class="d-name" x="20" y="88" text-anchor="start">clients</text>
+  <line x1="92" y1="83" x2="164" y2="83" stroke="var(--ink-mute)" stroke-width="1.5" marker-end="url(#rs-tip)"/>
+
+  <rect x="172" y="58" width="150" height="50" rx="4" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+  <text class="d-name" x="247" y="80" text-anchor="middle">Unbound</text>
+  <text class="d-label" x="247" y="97" text-anchor="middle">:53</text>
+
+  <path d="M330 83 L372 83 L372 36 L430 36" fill="none" stroke="var(--ink-mute)" stroke-width="1.5" marker-end="url(#rs-tip)"/>
+  <text class="d-name" x="440" y="41" text-anchor="start">the internet</text>
+
+  <path d="M372 83 L372 132 L430 132" fill="none" stroke="var(--signal)" stroke-width="1.5" marker-end="url(#rs-tip-signal)"/>
+  <text class="d-name" x="440" y="128" text-anchor="start">Wegweiser</text>
+  <text class="d-label" x="440" y="146" text-anchor="start">127.0.0.1:5353</text>
+  <text class="d-label" x="440" y="163" text-anchor="start">internal.example and its reverse</text>
+</svg>

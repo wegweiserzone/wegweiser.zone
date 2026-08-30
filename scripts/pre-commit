@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Blocks commits containing credentials. The repo is public.
+set -uo pipefail
+
+if git diff --cached -U0 | grep -qE '^\+.*BEGIN [A-Z ]*PRIVATE KEY'; then
+  echo "refusing: staged changes contain private key material" >&2
+  git diff --cached --name-only | sed 's/^/  /' >&2
+  exit 1
+fi
+
+if git diff --cached -U0 | grep -qiE '^\+.*"(password|passphrase)"[[:space:]]*:[[:space:]]*"[^"]+"'; then
+  echo "refusing: staged changes contain a non-empty password field" >&2
+  git diff --cached --name-only | sed 's/^/  /' >&2
+  exit 1
+fi

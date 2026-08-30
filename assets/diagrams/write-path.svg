@@ -1,0 +1,24 @@
+<svg viewBox="0 0 640 250" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="wp-tip" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L8 4 L0 8 z" fill="var(--ink-mute)"/>
+    </marker>
+  </defs>
+  <text class="d-step" x="20" y="26" text-anchor="start">HTTP request</text>
+  <text class="d-label" x="40" y="48" text-anchor="start">bearer token or session cookie → subject + scopes</text>
+  <path d="M26 58 L26 78" stroke="var(--ink-mute)" stroke-width="1.5" marker-end="url(#wp-tip)"/>
+
+  <text class="d-step" x="20" y="100" text-anchor="start">api handler</text>
+  <text class="d-label" x="130" y="100" text-anchor="start">decode →</text>
+  <text class="d-label d-label--signal" x="212" y="100" text-anchor="start">Command{ZoneID, Ops[], ExpectedSerial, Actor}</text>
+  <path d="M26 112 L26 132" stroke="var(--ink-mute)" stroke-width="1.5" marker-end="url(#wp-tip)"/>
+
+  <text class="d-step" x="20" y="154" text-anchor="start">apply</text>
+  <text class="d-label" x="90" y="154" text-anchor="start">validate, resolve reverse, allocate the serial</text>
+  <path d="M26 166 L26 186" stroke="var(--ink-mute)" stroke-width="1.5" marker-end="url(#wp-tip)"/>
+
+  <text class="d-step" x="20" y="208" text-anchor="start">store</text>
+  <text class="d-label" x="90" y="208" text-anchor="start">one transaction: records and the commit that explains them</text>
+  <path d="M26 220 L26 238" stroke="var(--ink-mute)" stroke-width="1.5" marker-end="url(#wp-tip)"/>
+  <text class="d-label" x="40" y="246" text-anchor="start">snapshot rebuilt and published</text>
+</svg>

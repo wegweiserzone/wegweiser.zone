@@ -1,0 +1,13 @@
+{{- $pages := slice -}}
+{{- range where site.RegularPages "Section" "docs" -}}
+  {{- $headings := slice -}}
+  {{- range findRE `<h[23] id="[^"]+">.*?</h[23]>` .Content -}}
+    {{- $id := index (findRE `id="([^"]+)"` . 1) 0 -}}
+    {{- $id = replaceRE `id="([^"]+)"` "$1" $id -}}
+    {{- $headings = $headings | append (dict "i" $id "t" (. | plainify | strings.TrimSpace)) -}}
+  {{- end -}}
+  {{- $pages = $pages | append (dict
+      "t" .Title "d" (.Description | default "") "g" (.Params.group | default "")
+      "u" .RelPermalink "x" (.Plain | strings.TrimSpace) "h" $headings) -}}
+{{- end -}}
+{{- $pages | jsonify -}}

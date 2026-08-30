@@ -1,0 +1,141 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build and check links
+        env:
+          SITE_COMMIT: ${{ github.sha }}
+        run: make check
+
+      - name: Upload build artefact
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: site
+          path: httpdocs/
+          retention-days: 1
+          # Off by default; drops .htaccess and .well-known/.
+          include-hidden-files: true
+
+  deploy:
+    name: Deploy
+    needs: check
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: site
+          path: httpdocs
+
+      - name: Configure SSH
+        env:
+          KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          DEPLOY_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          if [ -z "$KNOWN_HOSTS" ]; then
+            echo "::error::SSH_KNOWN_HOSTS is not set. Run ssh-keyscan against the host and store the result."
+            exit 1
+          fi
+          if [ -z "$DEPLOY_KEY" ]; then
+            echo "::error::SSH_PRIVATE_KEY is not set"
+            exit 1
+          fi
+
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          umask 077
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_deploy
+          ssh-keygen -y -f ~/.ssh/id_deploy > /dev/null \
+            || { echo "::error::SSH_PRIVATE_KEY is not a valid private key"; exit 1; }
+
+      - name: Upload
+        env:
+          HOST: ${{ secrets.SFTP_HOST }}
+          PORT: ${{ secrets.SFTP_PORT }}
+          USER: ${{ secrets.SFTP_USER }}
+          REMOTE: ${{ secrets.SFTP_PATH }}
+        run: |
+          for name in HOST USER REMOTE; do
+            [ -n "${!name}" ] || { echo "::error::SFTP_${name} is not set"; exit 1; }
+          done
+
+          case "$REMOTE" in
+            /*/httpdocs|/*/httpdocs/) ;;
+            *) echo "::error::SFTP_PATH is $REMOTE, which is not a document root"; exit 1 ;;
+          esac
+          test -f httpdocs/index.html || { echo "::error::build has no index.html"; exit 1; }
+
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+          # mirror skips dotfiles, so put them by hand.
+          dotted=""
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            dir=$(dirname "$f")
+            if [ "$dir" = "." ]; then
+              target="${REMOTE}"
+            else
+              target="${REMOTE}/$dir"
+              dotted="$dotted mkdir -p -f $target;"
+            fi
+            dotted="$dotted put -O $target httpdocs/$f;"
+          done <<EOF
+          $(cd httpdocs && find . -path '*/.*' -type f | sed 's|^\./||')
+          EOF
+
+          # Keep ACME challenges: deleting one breaks certificate renewal.
+          lftp -c "
+            set sftp:connect-program 'ssh -a -x -i $HOME/.ssh/id_deploy -p ${PORT:-222}';
+            set net:max-retries 2;
+            set net:timeout 20;
+            open -u ${USER}, sftp://${HOST};
+            mirror --reverse --delete --verbose --parallel=4 \
+                   --exclude '^\.well-known/acme-challenge/' \
+                   httpdocs/ ${REMOTE};
+            ${dotted}
+          "
+
+      - name: Verify the deployment
+        run: |
+          for attempt in 1 2 3 4 5; do
+            live=$(curl -fsS --max-time 20 https://wegweiser.zone/ || true)
+            if printf '%s' "$live" | grep -q "$GITHUB_SHA"; then
+              echo "wegweiser.zone is serving $GITHUB_SHA"
+              exit 0
+            fi
+            echo "attempt $attempt: not live yet"
+            sleep 6
+          done
+          echo "::error::upload finished but wegweiser.zone is not serving $GITHUB_SHA"
+          printf '%s' "$live" | grep -oE 'name=.?build.? content=.?[0-9a-f]{7,40}' \
+            || echo "no build marker in the response"
+          exit 1
+
+      - name: Check security.txt is reachable
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' https://wegweiser.zone/.well-known/security.txt)
+          if [ "$code" = "200" ]; then
+            echo "/.well-known/security.txt is served"
+          else
+            echo "::warning::/.well-known/security.txt returned $code"
+          fi

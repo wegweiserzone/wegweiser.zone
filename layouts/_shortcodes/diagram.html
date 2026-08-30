@@ -1,0 +1,10 @@
+{{/* Inlined so it inherits the page's CSS and works in both themes. */}}
+{{ $name := .Get 0 }}
+{{ $alt := .Get 1 }}
+{{ with resources.Get (printf "diagrams/%s.svg" $name) }}
+  <figure class="diagram" role="img" {{ with $alt }}aria-label="{{ . }}"{{ end }}>
+    {{ .Content | safeHTML }}
+  </figure>
+{{ else }}
+  {{ errorf "diagram %q not found in assets/diagrams" $name }}
+{{ end }}

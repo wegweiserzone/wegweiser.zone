@@ -1,0 +1,10 @@
+{{ $name := .Get 0 }}
+{{ $alt := .Get 1 }}
+<figure class="shot">
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="/img/{{ $name }}-light.webp" />
+    <img src="/img/{{ $name }}-dark.webp" alt="{{ $alt }}"
+         width="2000" height="1171" loading="lazy" decoding="async" />
+  </picture>
+  {{ with .Get 2 }}<figcaption>{{ . }}</figcaption>{{ end }}
+</figure>

@@ -1,0 +1,53 @@
+{{ define "main" }}
+  <section class="hero">
+    <h1>Wegweiser</h1>
+    <p>An authoritative DNS server with a web interface you don't need a manual for.</p>
+    <div class="hero__actions">
+      <a class="button button--primary" href="/docs/getting-started/">Get started</a>
+      <a class="button" href="{{ .Site.Params.repository }}">Source</a>
+      <a class="button" href="{{ .Site.Params.repository }}/releases/latest">Releases</a>
+    </div>
+  </section>
+
+  <div class="home">
+    <div class="cards">
+      <div class="card">
+        <h3>Reverse zones manage themselves</h3>
+        <p>An address record produces the matching PTR in the zone responsible for it,
+        IPv6 nibble zones and RFC 2317 delegation included. A conflict is shown, never
+        silently overwritten.</p>
+      </div>
+      <div class="card">
+        <h3>Every change is reversible</h3>
+        <p>Each edit is a journal event, so zone history, a diff of any change, an audit
+        trail and rollback to an earlier state all come out of one mechanism.</p>
+      </div>
+      <div class="card">
+        <h3>Two clients, one API</h3>
+        <p>A keyboard-driven web interface with a live query stream, and a command line
+        that reaches everything it does. Neither touches the database.</p>
+      </div>
+    </div>
+
+    <article class="prose">{{ .Content }}</article>
+
+    <div class="index">
+      {{ range site.Params.docGroups }}
+        {{ $group := . }}
+        {{ with where (where site.RegularPages "Section" "docs") "Params.group" $group }}
+          <div>
+            <h2>{{ $group }}</h2>
+            <ul>
+              {{ range sort . "Weight" }}
+                <li>
+                  <a href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>
+                  <p>{{ .Description }}</p>
+                </li>
+              {{ end }}
+            </ul>
+          </div>
+        {{ end }}
+      {{ end }}
+    </div>
+  </div>
+{{ end }}

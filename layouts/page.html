@@ -1,0 +1,20 @@
+{{ define "main" }}
+  {{ if eq .Section "docs" }}
+    <div class="shell shell--docs">
+      {{ partial "sidebar.html" . }}
+      <article class="prose">
+        {{ partial "page-header.html" . }}
+        {{ .Content }}
+        {{ partial "page-footer.html" . }}
+      </article>
+      {{ partial "toc.html" . }}
+    </div>
+  {{ else }}
+    <div class="single">
+      <article class="prose">
+        {{ partial "page-header.html" . }}
+        {{ .Content }}
+      </article>
+    </div>
+  {{ end }}
+{{ end }}

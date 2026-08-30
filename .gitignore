@@ -1,0 +1,12 @@
+# Build output. Uploaded by the deploy, not committed.
+/httpdocs/
+/resources/
+/.hugo_build.lock
+
+# Hugo, fetched by `make`.
+/bin/
+
+# Editor state.
+/.vscode/
+
+.DS_Store

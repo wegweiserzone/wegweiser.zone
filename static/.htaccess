@@ -1,0 +1,4 @@
+# Apache is what Hetzner serves this with. The one thing it cannot work out on
+# its own is which page to show for a miss: without this, a wrong link gets the
+# host's default error page and not this site's.
+ErrorDocument 404 /404.html

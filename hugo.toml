@@ -1,0 +1,38 @@
+baseURL = "https://wegweiser.zone/"
+locale = "en"
+title = "Wegweiser"
+
+# The document root on the web host.
+publishDir = "httpdocs"
+
+enableRobotsTXT = true
+enableGitInfo = false
+
+summaryLength = 30
+
+[params]
+  description = "An authoritative DNS server with a web interface you don't need a manual for."
+  repository = "https://github.com/wegweiserzone/wegweiser"
+  docGroups = ["Start here", "Everyday", "Running it", "How it works"]
+
+# SITE_COMMIT comes from the deploy. Hugo's defaults are repeated because
+# this replaces the list rather than extending it.
+[security.funcs]
+  getenv = ['^HUGO_', '^CI$', '^SITE_COMMIT$']
+
+[outputs]
+  home = ["HTML", "JSON"]
+
+[markup.goldmark.renderer]
+  unsafe = false
+
+[markup.tableOfContents]
+  startLevel = 2
+  endLevel = 3
+
+[markup.highlight]
+  noClasses = false
+  lineNos = false
+  tabWidth = 2
+
+[taxonomies]

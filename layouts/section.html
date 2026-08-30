@@ -1,0 +1,30 @@
+{{ define "main" }}
+  <div class="shell">
+    {{ partial "sidebar.html" . }}
+    <article class="prose">
+      <header>
+        <h1>{{ .Title }}</h1>
+        {{ with .Description }}<p class="prose__lede">{{ . }}</p>{{ end }}
+      </header>
+      {{ .Content }}
+      <div class="index">
+      {{ range site.Params.docGroups }}
+        {{ $group := . }}
+        {{ with where (where site.RegularPages "Section" "docs") "Params.group" $group }}
+          <div>
+            <h2>{{ $group }}</h2>
+            <ul>
+              {{ range sort . "Weight" }}
+                <li>
+                  <a href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>
+                  <p>{{ .Description }}</p>
+                </li>
+              {{ end }}
+            </ul>
+          </div>
+        {{ end }}
+      {{ end }}
+      </div>
+    </article>
+  </div>
+{{ end }}

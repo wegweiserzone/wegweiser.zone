@@ -1,0 +1,9 @@
+{{ $headings := findRE "<h2" .Content }}
+{{ if ge (len $headings) 4 }}
+  <nav class="toc" aria-labelledby="toc-heading">
+    <h2 id="toc-heading">On this page</h2>
+    {{ .TableOfContents }}
+  </nav>
+{{ else }}
+  <div></div>
+{{ end }}

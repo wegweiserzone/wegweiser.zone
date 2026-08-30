@@ -1,0 +1,9 @@
+# RFC 9116. The preferred route is GitHub's private reporting, which keeps the
+# report, the fix and the advisory in one place; the address below reaches the
+# same person without an account.
+Contact: https://github.com/wegweiserzone/wegweiser/security/advisories/new
+Contact: mailto:security@wegweiser.zone
+Policy: https://github.com/wegweiserzone/wegweiser/blob/main/SECURITY.md
+Preferred-Languages: en, de
+Canonical: https://wegweiser.zone/.well-known/security.txt
+Expires: 2027-08-30T00:00:00.000Z
