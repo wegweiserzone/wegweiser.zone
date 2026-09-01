@@ -1040,3 +1040,19 @@ kbd {
     margin-top: 2rem;
   }
 }
+
+/* ── the glossary ──────────────────────────────────────────────────────── */
+.prose--terms h3 {
+  margin: 1.5rem 0 0.2rem;
+  color: var(--signal);
+  font-family: var(--font-cond);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.95rem;
+}
+.prose--terms h3 + p {
+  margin-bottom: 0;
+}
+.prose--terms h2 {
+  margin-top: 3.5rem;
+}

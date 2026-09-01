@@ -1,5 +1,5 @@
 {{ $headings := findRE "<h2" .Content }}
-{{ if ge (len $headings) 4 }}
+{{ if and (ne .Params.toc false) (ge (len $headings) 4) }}
   <nav class="toc" aria-labelledby="toc-heading">
     <h2 id="toc-heading">On this page</h2>
     {{ .TableOfContents }}

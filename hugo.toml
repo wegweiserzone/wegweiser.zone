@@ -13,7 +13,7 @@ summaryLength = 30
 [params]
   description = "An authoritative DNS server with a web interface you don't need a manual for."
   repository = "https://github.com/wegweiserzone/wegweiser"
-  docGroups = ["Start here", "Everyday", "Running it", "How it works"]
+  docGroups = ["Start here", "Everyday", "Running it", "Reference", "How it works"]
 
 # SITE_COMMIT comes from the deploy. Hugo's defaults are repeated because
 # this replaces the list rather than extending it.
