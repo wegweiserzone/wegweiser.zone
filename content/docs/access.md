@@ -87,7 +87,7 @@ reachable by nothing — what keeps it private is the port you publish.
 If you do not want the browser half at all:
 
 ```console
-$ weg serve --api-ui=false
+$ weg serve --ui=false
 ```
 
 That removes the routes rather than hiding them, so the binary serves an API and nothing
