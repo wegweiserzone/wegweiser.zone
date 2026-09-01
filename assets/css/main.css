@@ -613,18 +613,6 @@ a:focus-visible {
   font-size: 0.9rem;
 }
 
-@media (max-width: 60rem) {
-  .shell {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 2rem;
-  }
-  .sidebar {
-    position: static;
-    max-height: none;
-    border-bottom: 1px solid var(--line);
-    padding-bottom: 1.5rem;
-  }
-}
 
 @media (prefers-reduced-motion: reduce) {
   html {
@@ -818,14 +806,6 @@ main:focus {
   color: var(--signal);
 }
 
-@media (max-width: 74rem) {
-  .shell--docs {
-    grid-template-columns: 15rem minmax(0, 1fr);
-  }
-  .toc {
-    display: none;
-  }
-}
 
 /* ── search, opened with Ctrl+K ────────────────────────────────────────── */
 
@@ -1022,4 +1002,41 @@ kbd {
 }
 .anchor:hover {
   color: var(--signal);
+}
+
+/* ── narrower screens ──────────────────────────────────────────────────── */
+
+/* No room for a third column. */
+@media (max-width: 74rem) {
+  .shell--docs {
+    grid-template-columns: 15rem minmax(0, 1fr);
+  }
+  .toc {
+    display: none;
+  }
+}
+
+/* One column, with the text first: sixteen links before the first sentence is
+   a long way to scroll on a phone. */
+@media (max-width: 60rem) {
+  .shell,
+  .shell--docs {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    padding-top: 1.5rem;
+  }
+  .prose {
+    order: 1;
+  }
+  .sidebar {
+    order: 2;
+    position: static;
+    max-height: none;
+    margin-top: 1rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+  }
+  .page-foot {
+    margin-top: 2rem;
+  }
 }
