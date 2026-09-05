@@ -57,6 +57,70 @@
     }
   }
 
+  /* ── light or dark ───────────────────────────────────────────────────── */
+  /* The stylesheet follows the system on its own; this only exists to overrule
+   * it. The choice is remembered per browser and re-applied in the head before
+   * the first paint. */
+  const root = document.documentElement;
+  const wantsLight = window.matchMedia("(prefers-color-scheme: light)");
+
+  const showing = () => root.dataset.theme || (wantsLight.matches ? "light" : "dark");
+
+  const icon = (paths) =>
+    `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">${paths}</svg>`;
+
+  const sun = icon(
+    '<circle cx="12" cy="12" r="4"/>' +
+      '<path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4' +
+      'M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  );
+  const moon = icon('<path d="M20 14.5A8.2 8.2 0 0 1 9.5 4 8.3 8.3 0 1 0 20 14.5z"/>');
+
+  const themeSwitch = document.createElement("button");
+  themeSwitch.type = "button";
+  themeSwitch.className = "theme-switch";
+
+  /* The button shows where a press would take you, not where you are. */
+  function labelSwitch() {
+    const to = showing() === "light" ? "dark" : "light";
+    themeSwitch.innerHTML = to === "dark" ? moon : sun;
+    themeSwitch.setAttribute("aria-label", `Switch to the ${to} design`);
+    themeSwitch.title = `Switch to the ${to} design`;
+  }
+
+  /* Screenshots come in both designs. The picture element picks by system
+   * preference, which a chosen design has to override by hand. */
+  function repaintShots(theme) {
+    for (const source of document.querySelectorAll(".shot picture source")) {
+      const img = source.parentElement.querySelector("img");
+      if (!img) continue;
+      source.dataset.light ??= source.srcset;
+      source.dataset.dark ??= img.getAttribute("src");
+      source.media = "all";
+      source.srcset = theme === "light" ? source.dataset.light : source.dataset.dark;
+    }
+  }
+
+  themeSwitch.addEventListener("click", () => {
+    const theme = showing() === "light" ? "dark" : "light";
+    root.dataset.theme = theme;
+    try {
+      localStorage.setItem("theme", theme);
+    } catch {
+      /* Private windows forget; the page still turns. */
+    }
+    repaintShots(theme);
+    labelSwitch();
+  });
+
+  /* A system that changes its mind still counts, as long as nobody has chosen. */
+  wantsLight.addEventListener("change", () => {
+    if (!root.dataset.theme) labelSwitch();
+  });
+
+  labelSwitch();
+  if (root.dataset.theme) repaintShots(root.dataset.theme);
+
   const state = { index: null, open: false, items: [], cursor: 0 };
 
   /* ── search ──────────────────────────────────────────────────────────── */
@@ -66,7 +130,7 @@
   trigger.innerHTML =
     '<span>Search</span><kbd>Ctrl</kbd><kbd>K</kbd>';
   trigger.addEventListener("click", () => open());
-  document.querySelector(".masthead nav")?.prepend(trigger);
+  document.querySelector(".masthead nav")?.prepend(trigger, themeSwitch);
 
   const dialog = document.createElement("dialog");
   dialog.className = "palette";
