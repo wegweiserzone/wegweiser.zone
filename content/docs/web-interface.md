@@ -111,7 +111,7 @@ that admits it.
 Every change, newest first, with the diff of any of them beside it and a button to put the
 zone back to the state before it.
 
-{{< screenshot "history" "The history screen: commits on the left, the diff of the selected one on the right, with a button to revert to that state." >}}
+{{< screenshot "history" "The history screen on Everything: commits on the left with the entries the server wrote itself set below the change that caused them and marked followed, and the diff of the selected one on the right, with a button to revert to that state." >}}
 
 It opens on **What people did**. Changing an address record writes the matching change in the
 reverse zone, and that arrives as its own commit, in its own zone, with the comment the server
@@ -140,6 +140,8 @@ Every zone on every address the notify list names, with the state each one is in
 it last reported and when it was last asked. Whether a secondary took the copy is a fact that
 lives on the other machine, so this server asks it rather than assuming.
 
+{{< screenshot "secondaries" "A table of one row per zone per secondary, each row a state — in step, behind, silent or unasked — beside the serial that secondary last reported, how many commits behind that leaves it, and when it was last asked." >}}
+
 Being in step is the only quiet state. A zone nothing has come back for reads *Unasked*, which
 is not the same as up to date, and hovering any state says what it means. Above the table, a
 line counts how many of the pairs are not known to be in step, so the screen answers its own
@@ -161,7 +163,7 @@ often the questions are asked.
 Three settings, server-wide, each in a panel of its own and grouped under what it belongs to:
 the reverse entries, and the zone transfer.
 
-{{< screenshot "settings" "The settings screen: the four reverse conflict policies, each with its API value and what it does, above the list of clients allowed to transfer a zone." >}}
+{{< screenshot "settings" "The settings screen: the four reverse conflict policies, each with its API value and what it does, above the transfer and notify lists, each in a panel of its own." >}}
 
 **When an address already answers** is the reverse conflict policy, and the four choices are
 spelled out with what each one costs: keep the first, take it over, keep both, or refuse the
