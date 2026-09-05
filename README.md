@@ -68,3 +68,9 @@ back after a small edit, or to move it up after re-reading it changed nothing.
 
 Colours and type come from `web/src/app.css` in the server repository. Fonts are
 self-hosted.
+
+The site follows the reader's system setting between light and dark; the switch in the
+masthead overrules it and is remembered in the browser. Both designs therefore have to
+hold up, and every screenshot ships as a pair — `assets/img/<name>-light.webp` and
+`-dark.webp`, the same screen in both. The `screenshot` shortcode refuses to build without
+both files, and `content/datenschutz.md` names what the switch leaves behind.

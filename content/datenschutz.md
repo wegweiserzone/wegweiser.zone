@@ -12,10 +12,18 @@ auch kein Fontanbieter aufgerufen. Was übrig bleibt, ist das Protokoll des Webs
 darum geht es hier.
 
 Ein kleines Skript wird ausgeliefert, für die Suche, die Kopierschaltflächen an den
-Codeblöcken und die Verweise an den Überschriften. Es lädt genau eine Datei von diesem
-Server nach — den Suchindex — sobald die Suche zum ersten Mal geöffnet wird, und sonst
-nichts. Es speichert nichts, setzt nichts und sendet nichts. Ohne JavaScript funktioniert
-die Seite vollständig; sie wird nur langsamer zu durchsuchen.
+Codeblöcken, die Verweise an den Überschriften und den Umschalter zwischen hellem und
+dunklem Design. Es lädt genau eine Datei von diesem Server nach — den Suchindex — sobald
+die Suche zum ersten Mal geöffnet wird, und sonst nichts. Gesendet wird nichts.
+
+Wer das Design umschaltet, hinterlässt genau diese eine Angabe — hell oder dunkel — im
+lokalen Speicher des Browsers, damit die nächste Seite gleich richtig aussieht. Kein
+Cookie, nichts, was mitgeschickt wird: der Eintrag bleibt auf dem Gerät und verschwindet
+mit den Browserdaten. Wer nicht umschaltet, hinterlässt auch das nicht; ohne eigene Wahl
+folgt die Seite der Einstellung des Betriebssystems.
+
+Ohne JavaScript funktioniert die Seite vollständig; sie wird nur langsamer zu durchsuchen,
+und das Design bleibt bei dem, was das Betriebssystem vorgibt.
 
 ## Verantwortlich
 
