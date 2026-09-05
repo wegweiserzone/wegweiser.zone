@@ -201,7 +201,9 @@ configuration that is perfectly formed and does not work, which is the failure
 this whole page is about. The file goes to standard output and the warnings go
 to standard error, so redirecting the first leaves nothing in it to delete.
 
-The settings screen in the interface does the same thing, with a copy button.
+The Secondaries screen in the interface does the same thing, with a copy button.
+It is a tool rather than a setting, so it opens from that screen's bar rather
+than sitting on the settings screen where it used to be.
 
 Nothing is generated for NSD or PowerDNS. The transfer works with both; you
 write those two by hand, and the blocks below are close enough to adapt.
@@ -255,11 +257,15 @@ acl:
   - id: wegweiser-notify
     address: 192.0.2.1
     action: notify
+  - id: wegweiser-notify-signed
+    address: 192.0.2.1
+    key: secondary.example.com.
+    action: notify
 
 zone:
   - domain: example.com.
     master: wegweiser
-    acl: wegweiser-notify
+    acl: [wegweiser-notify, wegweiser-notify-signed]
 ```
 
 The `acl` is not optional and its absence is quiet. Knot will fetch the zone
@@ -268,16 +274,101 @@ correct and the news takes an hour. BIND does not need the equivalent, because
 it accepts a notification from a server it already calls a primary. Both
 behaviours were checked against the real thing.
 
-The rule names an address and no key, deliberately. An ACL naming a key demands
-a signature, and whether a notification carries one is a separate setting here
-from whether a transfer is signed, so a rule that insisted would drop the
-notifications of an arrangement that is set up correctly.
+**Two rules where there is a key, because one cannot cover both cases.** A Knot
+access rule naming a key matches only a signed request, and one naming no key
+matches only an unsigned one. Whether a notification carries the key is a
+separate setting here from whether a transfer is signed, so a secondary set up
+from one key has to accept either. With a single rule one of the two
+arrangements transfers the zone and then drops every notification: correct
+data, a refresh interval late, and nothing anywhere saying so. Both are
+written now, and a configuration for an arrangement without a key is the one
+rule it always was.
+
+A file written before 0.3.0 has only the first of them. If your notifications
+are signed and your Knot secondary only ever picks a change up on its refresh
+timer, that is why: regenerate the file and reload it.
 
 ### Another Wegweiser
 
 Not yet. Wegweiser transfers zones out and does not take them in, so the second
 server in this arrangement is somebody else's software. That is a real
 limitation and it is written down rather than glossed over.
+
+## Where each secondary stands
+
+Everything above is what this side can check on its own: the key exists, the
+address is on the list, the zone is served. Whether the other machine actually
+took the copy is a fact that lives on the other machine, and a secondary that
+answers a notification and then never transfers looks exactly like one that is
+working.
+
+So it is asked.
+
+```console
+$ weg secondary status
+SECONDARY         ZONE                   STATE    SERIAL  BEHIND  ASKED
+192.0.2.53:53     example.com.           in step  7       -       2m ago
+192.0.2.53:53     2.0.192.in-addr.arpa.  in step  4       -       2m ago
+198.51.100.53:53  example.com.           behind   5       2       1m ago
+198.51.100.53:53  2.0.192.in-addr.arpa.  unasked  -       -       never
+```
+
+One line per zone per address on the notify list. Who is asked is who is told:
+there is no second list to fill in and keep in step with the first, and a
+notify list nobody has filled in has nothing to report here.
+
+| State | |
+| --- | --- |
+| `in step` | It holds the serial this server publishes |
+| `behind` | It holds an older one, and `BEHIND` is by how many commits |
+| `unasked` | Nothing has come back for this pair yet |
+| `silent` | It did not answer in time; the serial shown is the last one anybody saw |
+| `no serial` | It answered without a `SOA` to read, which is what a refusal looks like from here |
+| `ahead` | It holds a newer serial, so it took its copy from somewhere this server is not |
+| `unordered` | The two serials are half the space apart, which RFC 1982 §3.2 declines to order |
+
+**`unasked` is a state rather than a quiet pass.** A pair nothing has come back
+for is unknown, not up to date, and those two being told apart is the whole
+point of asking. The dash in `BEHIND` says the same thing in the columns beside
+it: zero commits behind and no idea are different answers and are written
+differently.
+
+Nothing here is red, in the interface or on the terminal. A zone that has not
+arrived yet is something to look at rather than a failure of this server.
+
+### How the asking works
+
+A probe is a `SOA` query, unsigned, over UDP, to the address on the notify
+list. Nothing is being asked for beyond what that server answers anybody, so it
+carries no key — and the configuration written above adds no query restriction,
+so a secondary that has one globally answers nothing and reads as `silent`,
+which is honest.
+
+A pair becomes due when its notification finishes, answered or given up on. A
+zone nobody edits produces no probes, so the traffic follows how much this
+server is changed rather than how many zones it holds. Under that, a slow sweep
+asks about everything at least hourly whether anything changed or not, which is
+what catches the secondary that quietly lost a zone it already had.
+
+Nothing is reported while a notification is still outstanding. A zone that
+changed a moment ago whose secondary has not fetched it yet is in flight rather
+than behind, and a report that cannot tell those apart is one nobody reads.
+
+**One caveat, and it is a real one.** BIND acknowledges a notification and
+*then* opens the transfer, about eleven milliseconds later. A probe fired the
+moment the notification finishes reads the serial from before the change, so
+the first reading after an edit can say `behind` when nothing is wrong. The
+next ask corrects it and nothing stays wrong, but a `behind` that is seconds
+old and clears itself is that. It is written down here rather than smoothed
+over, and what the wait after a notification should be is not settled yet.
+
+Nothing automatic follows from a lagging secondary. In particular it is not
+sent another notification: a secondary that is not transferring does not start
+because it was told twice.
+
+The interface has the same table on its own [Secondaries
+screen](/docs/web-interface/#secondaries), where hovering a state says what it
+means.
 
 ## Checking it works
 
@@ -328,11 +419,31 @@ weg_dns_queries_total{type="AXFR"}
 weg_dns_queries_total{type="IXFR"}
 weg_dns_notifications_total{outcome="answered"}
 weg_dns_notifications_total{outcome="abandoned"}
+weg_secondary_serial_lag{target}
+weg_secondary_zones_behind{target}
+weg_secondary_zones_unanswered{target}
+weg_secondary_probes_total{outcome}
 ```
 
 `abandoned` counts secondaries that were told six times and never answered. It
 should be zero. Anything else means a notification is not arriving, and that
 secondary is waiting out its refresh timer on every change.
+
+The four below it are what the probes found. `weg_secondary_serial_lag` is how
+many commits the furthest behind of a secondary's zones has yet to see, and
+`weg_secondary_zones_behind` how many of them are behind at all. Both are per
+secondary rather than per zone: a series per zone per target is what makes a
+label expensive, and which zone it is belongs in `weg secondary status`, where
+somebody asked for it.
+
+`weg_secondary_zones_unanswered` is the one that is easy to leave out and
+should not be. A secondary that has gone quiet reports nothing behind, because
+nothing about it is known, and without this that is indistinguishable from one
+that is up to date.
+
+A target dropped from the notify list loses its series rather than being left
+at the last value it had, which is the kind of number somebody trusts a year
+later.
 
 ## How many at once
 

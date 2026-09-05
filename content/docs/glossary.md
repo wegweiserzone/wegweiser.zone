@@ -167,6 +167,21 @@ when its refresh timer fires (RFC 1996).
 A shared secret both ends sign messages with (RFC 8945). A key grants a transfer
 from any address, which an address list cannot do across an organisational boundary.
 
+### Serial probe
+
+A `SOA` query this server sends a secondary to find out which serial it actually
+holds. Being told a zone changed is not the same as having fetched it, and a
+secondary that answers a notification and then never transfers looks exactly
+like one that works. The query is ordinary; asking it on a schedule and
+reporting the answer is this project's own.
+
+### In step, behind, unasked
+
+What a probe found. **In step** is a secondary holding the serial this server
+publishes, **behind** one holding an older serial, and **unasked** a pair
+nothing has come back for yet — which is unknown rather than up to date, and is
+never reported as the first.
+
 ## Answers
 
 ### NXDOMAIN

@@ -12,8 +12,9 @@ It is a side project, written by one person who got tired of editing zonefiles b
 *Wegweiser* is German for signpost.
 
 Also here: authoritative UDP and TCP with EDNS0, zonefile import and export, outbound zone
-transfer to the secondaries you name, signed with TSIG and announced with NOTIFY, SQLite
-persistence, token authentication, Prometheus metrics. Single node.
+transfer to the secondaries you name, signed with TSIG, announced with NOTIFY and then asked
+what serial they actually hold, SQLite persistence, token authentication, Prometheus metrics.
+Single node.
 
 ### One record, two answers
 

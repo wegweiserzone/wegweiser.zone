@@ -37,7 +37,7 @@ Two endpoints need no credential. `GET /healthz`, because a load balancer has no
 one, and `POST /auth/session`, because handing over a token is what it is for.
 
 ```json
-{ "status": "serving", "version": "v0.2.0", "zones": 2, "records": 7 }
+{ "status": "serving", "version": "v0.3.0", "zones": 2, "records": 7 }
 ```
 
 ### From a browser
@@ -234,7 +234,20 @@ That one `PUT` produced two of them:
 
 `source` separates what a client asked for from what the server did about it. `actor` is the
 token or session behind it. A change to one zone's addresses that moves a second zone's
-serial is visible as exactly that.
+serial is visible as exactly that, and both commits carry the one timestamp the command was
+accepted at rather than one each.
+
+`?source=` narrows the listing to those causes, repeatably. The four are `api`, `cli`,
+`import` and `system`, and `system` is the server's own doing:
+
+```console
+$ curl ... ".../commits?source=api&source=cli"    # what people did
+```
+
+On a zone with reverse automation the `system` entries are most of them, so leaving them out
+is what a history somebody reads looks like, and asking for them alone is what checks the
+automation. The interface opens on the first of those and `weg history list --source` is the
+same filter.
 
 `GET /commits/{id}` adds the records the commit touched. So does a rollback, which is worth
 looking at closely:
@@ -368,6 +381,33 @@ this server's filesystem out loud.
 `GET /zones/{id}/export` writes it back out as `text/dns`, in the presentation format of
 RFC 1035 §5, with the SOA's fields commented.
 
+## Where the secondaries stand
+
+`GET /secondary-status` says what each secondary holds: one entry per zone per address on the
+notify list. There is no list to configure for it — who is asked is who is told.
+
+```json
+[
+  { "zone": "example.com.", "target": "192.0.2.53:53", "state": "inStep",
+    "serial": 7, "askedAt": "2026-09-04T09:12:41Z" },
+  { "zone": "example.com.", "target": "198.51.100.53:53", "state": "behind",
+    "serial": 5, "lag": 2, "askedAt": "2026-09-04T09:13:02Z" },
+  { "zone": "2.0.192.in-addr.arpa.", "target": "198.51.100.53:53", "state": "unasked" }
+]
+```
+
+`state` is one of `unasked`, `inStep`, `behind`, `ahead`, `unordered`, `silent` or `noSerial`.
+Read `unasked` as unknown rather than as healthy: it is a pair the first question has not come
+back for, and a client that renders it as in step has undone the point of asking. `serial` is
+left out where the secondary has never said one, and kept where it has since gone silent, so
+what is shown is the last thing anybody saw and `state` is what says the reading is old.
+`lag` counts commits rather than a distance, because a commit advances a zone by exactly one,
+and it is present only for `behind`.
+
+A bare array with no cursor: it is bounded by a notify list somebody filled in by hand. [A
+second nameserver](/docs/secondaries/#where-each-secondary-stands) has when the questions are
+asked and what the states mean on the ground.
+
 ## Listings
 
 Cursor-based. A page carries `nextCursor` when there is more to fetch, and omits the field
@@ -386,7 +426,7 @@ Zones, records and commits page, and each takes filters of its own:
 | --- | --- |
 | `/zones` | `name`, `kind`, `disabled`, `search` |
 | `/zones/{id}/records` | `name`, `type`, `search` |
-| `/commits` | `zoneId`, `kind`, `actor`, `since`, `until` |
+| `/commits` | `zoneId`, `kind`, `source`, `actor`, `since`, `until` |
 
 `since` and `until` on the history are what an audit export is built from, and `actor`
 narrows it to one token.
@@ -426,7 +466,7 @@ status code.
 
 ## Everything there is
 
-Thirty-six operations. The spec is the authority; this is the map.
+Thirty-seven operations. The spec is the authority; this is the map.
 
 **Zones**
 
@@ -458,6 +498,7 @@ Thirty-six operations. The spec is the authority; this is the map.
 | `GET POST /tokens` · `DELETE /tokens/{id}` | Credentials. `admin` |
 | `GET POST /tsig-keys` · `DELETE` · `GET .../secret` | Transfer keys. `admin` |
 | `GET /secondary-config` | The configuration a secondary needs. `admin` |
+| `GET /secondary-status` | Where each secondary stands on each zone |
 
 **Operations**
 

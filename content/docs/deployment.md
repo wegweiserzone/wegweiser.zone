@@ -110,7 +110,9 @@ container reporting healthy while answering REFUSED for its own zones is worse
 than one that reports nothing.
 
 Build the image with `--format docker`, which `make image` does: the OCI image
-format has no field for a health check, and podman drops it with a warning.
+format has no field for a health check, and podman drops it with a warning. The
+published image is pushed in that format for the same reason, so `podman run`
+gives a container with a health state and not only `docker run` does.
 
 ### Configuration in a container
 

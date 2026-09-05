@@ -26,6 +26,34 @@ zone is gone.
 The serial column is the point. One commit advances it by exactly one, so the history is a
 contiguous chain rather than a log beside the data.
 
+## What people did, and what followed
+
+One change to an address record writes the reverse entry too, in a zone nobody named, and
+that arrives as a commit of its own. Both are real history and only one of them is something
+a person did, so the history can be read by what caused it:
+
+```console
+$ weg history list --source api --source cli
+```
+
+The causes are `api`, `cli`, `import` and `system`. `system` is the server's own doing, which
+in practice means the reverse entries it kept in step with a change somebody made — on a zone
+with reverse automation, most of the entries. Leaving them out is usually what you want;
+putting them back is how you check what the automation actually did:
+
+```console
+$ weg history list example.com --source system
+```
+
+The interface opens on the same reading. **What people did** is the default and **Everything**
+brings the followed commits back, set below the change they came from and marked *Followed*
+rather than by kind: the kind of such a commit is always an edit, which says nothing, and what
+it is, is the consequence of another one.
+
+A change and the reverse entries it causes carry one timestamp rather than several a fraction
+of a millisecond apart. One command was accepted at one moment, so nothing in the ordering of
+those commits means anything it was not meant to.
+
 ## What changed
 
 ```console

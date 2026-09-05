@@ -9,7 +9,7 @@ group = "Running it"
 
 ```console
 $ weg health
-serving — 2 zones, 19 records, 0.2.0
+serving — 2 zones, 19 records, 0.3.0
 ```
 
 `/healthz` is the same answer over HTTP and is **the one endpoint that needs no credential**,
@@ -52,13 +52,17 @@ weg_dns_response_size_bytes
 weg_dns_queries_dropped_total{transport}
 weg_dns_responses_truncated_total{transport}
 weg_dns_notifications_total{outcome}
+weg_secondary_probes_total{outcome}
+weg_secondary_serial_lag{target}
+weg_secondary_zones_behind{target}
+weg_secondary_zones_unanswered{target}
 weg_snapshot_zones
 weg_snapshot_records
 weg_snapshot_published_timestamp_seconds
 weg_build_info
 ```
 
-### The four worth an alert
+### The five worth an alert
 
 **`weg_snapshot_published_timestamp_seconds` stops moving** while writes are happening. The
 snapshot is what queries are answered from; if it stops being rebuilt, the server is
@@ -69,7 +73,16 @@ failure from one answered SERVFAIL, and it is the one a client experiences as a 
 
 **`weg_dns_notifications_total{outcome="abandoned"}` is not zero.** That counts secondaries
 told six times that never answered. Each one is waiting out its refresh timer on every
-change, and nothing else will tell you.
+change.
+
+**`weg_secondary_zones_behind` stays above zero, or `weg_secondary_zones_unanswered` is not
+zero.** Being told is not the same as having fetched, so the secondaries are asked what serial
+they hold. A zone that stays behind for longer than a transfer takes is a secondary that
+answers notifications and does not transfer, which nothing else on this list would show. The
+second gauge is the quiet one: a secondary that has gone silent reports nothing behind,
+because nothing about it is known. [Where each secondary
+stands](/docs/secondaries/#where-each-secondary-stands) has what the states mean, and why a
+`behind` a few seconds after an edit is expected rather than a fault.
 
 **`weg_snapshot_zones` falls.** Zones do not usually leave.
 

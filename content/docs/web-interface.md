@@ -113,10 +113,14 @@ zone back to the state before it.
 
 {{< screenshot "history" "The history screen: commits on the left, the diff of the selected one on the right, with a button to revert to that state." >}}
 
-Two entries for one edit in that screenshot. Changing an address record wrote the matching
-change in the reverse zone, and that arrives as its own commit, in its own zone, with the
-comment the server gave it. A rollback is a new commit too, which is why the serial moves
-forward when you revert. [History and rollback](/docs/history/) has the rest.
+It opens on **What people did**. Changing an address record writes the matching change in the
+reverse zone, and that arrives as its own commit, in its own zone, with the comment the server
+gave it — true history, and not something anybody did. **Everything** brings those back, set
+below the change they came from and marked *Followed* rather than by kind, because the kind of
+such a commit is always an edit and what it is, is the consequence of another one.
+
+A rollback is a new commit too, which is why the serial moves forward when you revert.
+[History and rollback](/docs/history/) has the rest.
 
 ## Tokens and keys
 
@@ -130,9 +134,32 @@ signed in with.
 
 A TSIG secret can be read back, because the other end of the transfer has to be given it.
 
+## Secondaries
+
+Every zone on every address the notify list names, with the state each one is in, the serial
+it last reported and when it was last asked. Whether a secondary took the copy is a fact that
+lives on the other machine, so this server asks it rather than assuming.
+
+Being in step is the only quiet state. A zone nothing has come back for reads *Unasked*, which
+is not the same as up to date, and hovering any state says what it means. Above the table, a
+line counts how many of the pairs are not known to be in step, so the screen answers its own
+question without anybody reading every row. Nothing here is red: a zone that has not arrived
+yet is something to look at rather than a failure of this server.
+
+**The configuration the other end needs** is on this screen too, as a dialog from the bar. It
+writes a BIND or Knot fragment for a secondary, ready to copy, and warns about what it cannot
+do from here, because [it writes the file and never installs
+it](/docs/secondaries/). It used to sit on the settings screen; it is a tool rather than a
+setting, and the command line has always kept it under the same noun as `weg secondary
+config`.
+
+[A second nameserver](/docs/secondaries/#where-each-secondary-stands) has the states and how
+often the questions are asked.
+
 ## Settings
 
-Four things, server-wide.
+Three settings, server-wide, each in a panel of its own and grouped under what it belongs to:
+the reverse entries, and the zone transfer.
 
 {{< screenshot "settings" "The settings screen: the four reverse conflict policies, each with its API value and what it does, above the list of clients allowed to transfer a zone." >}}
 
@@ -142,11 +169,9 @@ write. The API values are shown next to the names, so what you set here and what
 are visibly the same setting.
 
 **Who may pull a whole zone** and **who is told when one changes** are the transfer and NOTIFY
-lists. A transfer hands over every name and address at once, so the default is nobody.
-
-**The configuration the other end needs** writes a BIND or Knot fragment for a secondary,
-ready to copy. It warns about what it cannot do from here, because
-[it writes the file and never installs it](/docs/secondaries/).
+lists. A transfer hands over every name and address at once, so the default is nobody. The
+second of them is also who gets asked what they hold, which is what the Secondaries screen
+above reports.
 
 ## The keyboard
 
@@ -162,6 +187,9 @@ Without it:
 | `g` then `o` `z` `s` `h` `t` `k` `,` | Overview, Zones, Query stream, History, Tokens, Keys, Settings |
 | `/` | Focus whatever the current screen filters by |
 | `↑` `↓` `↵` `Esc` | Move, open, close — in the palette and in tables |
+
+Secondaries has no letter of its own yet, and the palette does not list it; the rail is
+the way there.
 
 ## Light and dark
 

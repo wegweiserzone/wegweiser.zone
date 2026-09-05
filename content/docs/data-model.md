@@ -191,6 +191,11 @@ A commit belongs to exactly one zone. A change touching a forward and a reverse 
 **two commits**, one per zone, written in the same transaction. Zones have independent
 serials; a commit spanning zones could not advance both correctly.
 
+They carry one timestamp, read once for the whole change rather than once per zone. One
+command was accepted at one moment, and a clock read per zone puts an order between those
+commits that nothing meant by it — which a reader of the history, sorting by time, would take
+for a sequence.
+
 Events are numbered from zero without gaps, with every deletion before every addition, so
 that a commit is already a difference sequence in the shape RFC 1995 §2 requires.
 
