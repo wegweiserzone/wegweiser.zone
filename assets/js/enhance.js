@@ -35,6 +35,28 @@
     h.append(a);
   }
 
+  /* ── how old the page is ─────────────────────────────────────────────── */
+  /* The date is baked in at build time, the age is not: working it out here
+   * means it stays true between deploys. Only said once a page has had enough
+   * time to drift; a fresh one does not need the reassurance. */
+  const stamped = document.querySelector(".stamp__date time[datetime]");
+  if (stamped) {
+    const days = Math.floor((Date.now() - Date.parse(stamped.dateTime)) / 86400000);
+    if (days >= 60) {
+      const months = Math.round(days / 30.44);
+      const years = days / 365.25;
+      const age = document.createElement("span");
+      age.className = "stamp__age";
+      age.textContent =
+        days < 365
+          ? `${months} months ago`
+          : years < 1.5
+            ? "about a year ago"
+            : `${Math.round(years)} years ago`;
+      stamped.after(age);
+    }
+  }
+
   const state = { index: null, open: false, items: [], cursor: 0 };
 
   /* ── search ──────────────────────────────────────────────────────────── */

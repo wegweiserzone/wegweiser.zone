@@ -5,6 +5,7 @@
       <header>
         <h1>{{ .Title }}</h1>
         {{ with .Description }}<p class="prose__lede">{{ . }}</p>{{ end }}
+        {{ partial "page-stamp.html" . }}
       </header>
       {{ .Content }}
       <div class="index">

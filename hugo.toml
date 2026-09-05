@@ -6,7 +6,11 @@ title = "Wegweiser"
 publishDir = "httpdocs"
 
 enableRobotsTXT = true
-enableGitInfo = false
+
+# Gives every page a .Lastmod from the commit that last touched its file, so the
+# date under a heading cannot drift away from the truth. Needs full history:
+# the deploy checks out with fetch-depth 0.
+enableGitInfo = true
 
 summaryLength = 30
 
@@ -14,6 +18,21 @@ summaryLength = 30
   description = "An authoritative DNS server with a web interface you don't need a manual for."
   repository = "https://github.com/wegweiserzone/wegweiser"
   docGroups = ["Start here", "Everyday", "Running it", "Reference", "How it works"]
+
+  # Every release, oldest first, with the day it shipped. A page is stamped with
+  # whichever release was current when git last saw its file change, so adding a
+  # line here does not relabel pages nobody has revised. In the server
+  # repository, `git tag -l --sort=creatordate
+  # --format='%(refname:short) %(creatordate:short)'` prints this list.
+  [[params.releases]]
+    version = "0.1.0"
+    date = "2026-08-22"
+  [[params.releases]]
+    version = "0.2.0"
+    date = "2026-08-29"
+  [[params.releases]]
+    version = "0.3.0"
+    date = "2026-09-04"
 
 # SITE_COMMIT comes from the deploy. Hugo's defaults are repeated because
 # this replaces the list rather than extending it.

@@ -791,6 +791,47 @@ main:focus {
   color: var(--signal);
 }
 
+/* ── how current a page is ─────────────────────────────────────────────── */
+
+.stamp {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.65rem;
+  margin: 0.9rem 0 0;
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+}
+.stamp > * + *::before {
+  content: "· ";
+  color: var(--ink-faint);
+}
+.stamp__version {
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--signal-lo);
+  border-radius: 3px;
+  background: var(--signal-lo);
+  color: var(--signal);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-decoration: none;
+}
+.stamp__version:hover {
+  border-color: var(--signal);
+}
+.stamp__behind a {
+  color: var(--ink-mute);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--ink-faint);
+}
+.stamp__behind a:hover {
+  color: var(--signal);
+  border-bottom-color: var(--signal);
+}
+.stamp__age::before {
+  content: " · ";
+}
+
 /* ── the foot of a page ────────────────────────────────────────────────── */
 
 .page-foot {

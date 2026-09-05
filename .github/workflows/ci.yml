@@ -19,6 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # enableGitInfo dates every page from the commit that last touched
+          # it, which a shallow clone does not have.
+          fetch-depth: 0
 
       - name: Build and check links
         env:

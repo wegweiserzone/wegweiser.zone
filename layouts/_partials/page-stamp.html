@@ -1,0 +1,53 @@
+{{/* How current a page is. The release is not written into the page: it is the
+     one that was current on the day git last saw the file change, so shipping a
+     new release does not relabel twenty pages nobody has revised. A page can
+     pin the claim with `version` in its front matter — when an edit was a typo
+     rather than a re-reading, or when a re-reading changed nothing. */}}
+
+{{ $releases := site.Params.releases }}
+{{ $current := "" }}
+{{ with $releases }}{{ $current = (index (last 1 .) 0).version }}{{ end }}
+
+{{/* A section stands for the pages below it: newest change, current release. */}}
+{{ $lastmod := .Lastmod }}
+{{ if .IsSection }}
+  {{ range .RegularPagesRecursive }}
+    {{ if .Lastmod.After $lastmod }}{{ $lastmod = .Lastmod }}{{ end }}
+  {{ end }}
+{{ end }}
+
+{{ $version := .Params.version }}
+{{ if .IsSection }}
+  {{ $version = $current }}
+{{ else if and (not $version) (not $lastmod.IsZero) }}
+  {{ $day := $lastmod.Format "2006-01-02" }}
+  {{ range $releases }}
+    {{ if ge $day .date }}{{ $version = .version }}{{ end }}
+  {{ end }}
+  {{/* Written before the first release we know of. */}}
+  {{ if and (not $version) $releases }}{{ $version = (index $releases 0).version }}{{ end }}
+{{ end }}
+
+{{ $tag := printf "%s/releases/tag/v" site.Params.repository }}
+
+{{ if or $version (not $lastmod.IsZero) }}
+  <p class="stamp">
+    {{ with $version }}
+      <span class="stamp__for">
+        {{ if $.IsSection }}Current release{{ else }}Written for{{ end }}
+        <a class="stamp__version" href="{{ $tag }}{{ . }}">v{{ . }}</a>
+      </span>
+    {{ end }}
+    {{ if not $lastmod.IsZero }}
+      <span class="stamp__date">
+        {{ if $.IsSection }}Newest change{{ else }}Updated{{ end }}
+        <time datetime="{{ $lastmod.Format "2006-01-02" }}">{{ $lastmod.Format "2 January 2006" }}</time>
+      </span>
+    {{ end }}
+    {{ if and $version $current (ne $version $current) }}
+      <span class="stamp__behind">
+        <a href="{{ $tag }}{{ $current }}">{{ $current }} is current</a>
+      </span>
+    {{ end }}
+  </p>
+{{ end }}

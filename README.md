@@ -49,5 +49,22 @@ or a filled-in password field.
 
 `content/docs/` holds the documentation, written as prose rather than as a reference.
 
+Every documentation page carries the release it was written for and the day it last
+changed. Neither is maintained by hand. `enableGitInfo` dates a page from the commit that
+last touched its file — so the build needs the full history, `fetch-depth: 0` — and the
+release is whichever entry in `[[params.releases]]` was current on that day. Shipping a
+release therefore means adding three lines to `hugo.toml`, not editing twenty pages: only
+the ones you actually revise move up, and the rest keep saying what they are, next to a
+quiet note that a newer release exists.
+
+```console
+$ git -C ../wegweiser tag -l --sort=creatordate \
+    --format='%(refname:short) %(creatordate:short)'   # the list, ready to paste
+```
+
+The derivation reads an edit as a re-reading against the current release, which a typo fix
+is not. Set `version` in a page's front matter to pin the claim — either to hold a page
+back after a small edit, or to move it up after re-reading it changed nothing.
+
 Colours and type come from `web/src/app.css` in the server repository. Fonts are
 self-hosted.

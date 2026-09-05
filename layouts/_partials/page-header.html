@@ -1,4 +1,5 @@
 <header>
   <h1>{{ .Title }}</h1>
   {{ with .Description }}<p class="prose__lede">{{ . }}</p>{{ end }}
+  {{ if eq .Section "docs" }}{{ partial "page-stamp.html" . }}{{ end }}
 </header>
