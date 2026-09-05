@@ -1,10 +1,25 @@
+{{/* Two files per screen, one per theme. They live in assets/ rather than
+     static/ because Hugo only measures what it processes, and the width and
+     height below come from the files. */}}
+
 {{ $name := .Get 0 }}
 {{ $alt := .Get 1 }}
+
+{{ $dark := resources.Get (printf "img/%s-dark.webp" $name) }}
+{{ $light := resources.Get (printf "img/%s-light.webp" $name) }}
+
+{{ if not $dark }}
+  {{ errorf "screenshot %q: assets/img/%s-dark.webp is missing." $name $name }}
+{{ end }}
+{{ if not $light }}
+  {{ errorf "screenshot %q: assets/img/%s-light.webp is missing." $name $name }}
+{{ end }}
+
 <figure class="shot">
   <picture>
-    <source media="(prefers-color-scheme: light)" srcset="/img/{{ $name }}-light.webp" />
-    <img src="/img/{{ $name }}-dark.webp" alt="{{ $alt }}"
-         width="2000" height="1171" loading="lazy" decoding="async" />
+    <source media="(prefers-color-scheme: light)" srcset="{{ $light.RelPermalink }}" />
+    <img src="{{ $dark.RelPermalink }}" alt="{{ $alt }}"
+         width="{{ $dark.Width }}" height="{{ $dark.Height }}" loading="lazy" decoding="async" />
   </picture>
   {{ with .Get 2 }}<figcaption>{{ . }}</figcaption>{{ end }}
 </figure>
