@@ -193,6 +193,7 @@ a:focus-visible {
 }
 .masthead nav {
   display: flex;
+  align-items: center;
   gap: 1.25rem;
   margin-left: auto;
   font-family: var(--font-cond);
