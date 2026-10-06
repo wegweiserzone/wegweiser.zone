@@ -9,11 +9,11 @@ One nameserver is one machine that can reboot. Every registrar asks for at
 least two, and the reason is not bureaucracy: a zone with a single server
 disappears entirely while that server is down.
 
-Wegweiser does not cluster yet, and it does not need to for this. Zone transfer
-is how every nameserver written since the eighties gets a copy of a zone from
-another one, so the second server can be BIND, Knot, NSD or PowerDNS, and none
-of them has to know what the first one is. It cannot be another Wegweiser yet,
-which the section on the other end explains.
+Zone transfer is how every nameserver written since the eighties gets a copy of
+a zone from another one, so the second server can be BIND, Knot, NSD or
+PowerDNS, and none of them has to know what the first one is. Several Wegweiser
+servers that should hold the same zones are a [cluster](/docs/cluster/)
+instead, and a cluster transfers to secondaries the way a single server does.
 
 This page is that arrangement. Three settings on this side, a handful of lines
 on the other.
@@ -290,9 +290,12 @@ timer, that is why: regenerate the file and reload it.
 
 ### Another Wegweiser
 
-Not yet. Wegweiser transfers zones out and does not take them in, so the second
-server in this arrangement is somebody else's software. That is a real
-limitation and it is written down rather than glossed over.
+Not as a secondary. Wegweiser transfers zones out and does not take them in,
+so the second server in this arrangement is somebody else's software. Two
+Wegweiser servers that should answer for the same zones are a
+[cluster](/docs/cluster/), which replicates everything rather than copying
+zones, with a [witness](/docs/witness/) as the third vote when two servers are
+all there is.
 
 ## Where each secondary stands
 
@@ -484,6 +487,7 @@ fetched. That is the honest description, and for most networks it is enough:
 the thing that actually fails is a machine, and the zone keeps answering.
 
 Automatic failover of the *editing* side needs consensus, which needs at least
-three servers to have a majority, and that is not built yet. Two servers cannot
-elect anything. A pair that claimed to would be lying in the one place a DNS
-server must not.
+three votes to have a majority. That is what a [cluster](/docs/cluster/) is,
+with a [witness](/docs/witness/) as the third vote when two servers are all
+there is. Two servers alone cannot elect anything, and a pair that claimed to
+would be lying in the one place a DNS server must not.

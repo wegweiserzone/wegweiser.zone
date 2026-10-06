@@ -238,12 +238,12 @@ naming the token behind each change.
 ### 3.9 ULID primary keys
 
 Not auto-increment integers. Three reasons: they are assignable before the transaction, they
-survive being merged across nodes when Raft arrives, and they are safe to expose in the API
-so URLs do not leak row counts. Not UUIDv4, because ULIDs are time-ordered and therefore keep
+are minted where a change is planned and travel with it to every member of a cluster, and
+they are safe to expose in the API so URLs do not leak row counts. Not UUIDv4, because ULIDs are time-ordered and therefore keep
 B-tree insert locality: the property UUIDv4 destroys.
 
-The store refuses to mint one. Once nodes replicate, the identifier has to be part of the
-command every node applies, or two nodes would invent two identifiers for one change.
+The store refuses to mint one. In a cluster the identifier is part of the batch every
+member applies, or two members would invent two identifiers for one change.
 
 The cost is 26 bytes per key instead of 8. It is affordable here specifically because the
 query path never touches the database: IDs matter only on the edit path, which is orders of

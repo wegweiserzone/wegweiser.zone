@@ -9,7 +9,7 @@ group = "Running it"
 
 ```console
 $ weg health
-serving — 2 zones, 19 records, 0.3.0
+serving — 2 zones, 6 records, v0.5.0
 ```
 
 `/healthz` is the same answer over HTTP and is **the one endpoint that needs no credential**,
@@ -20,11 +20,23 @@ up. A container that called itself healthy while answering REFUSED for its own z
 be worse than one that reported nothing, which is why the image's health check is this
 command and not a TCP probe.
 
+On a member of a [cluster](/docs/cluster/) it carries `current` as well:
+
+```json
+{"current":true,"records":2,"status":"serving","version":"v0.5.0","zones":1}
+```
+
+`current` is false once the member has left its cluster, by being taken out or by stopping
+over a change it could not apply, and `weg health` says so in a second line. The status stays
+`serving`, because the member still answers queries with what it held. Whether that is reason
+to take it out of rotation is yours to decide, so it is a field beside the status rather than
+a different status code.
+
 ## What it has been doing
 
 ```console
 $ weg status
-no queries answered yet: the snapshot holds 2 zones, 19 records
+no queries answered yet: the snapshot holds 2 zones, 6 records
 ```
 
 For the live view, `weg query tail` follows queries as they are answered, filtered
@@ -47,11 +59,13 @@ bearer token.
 
 ```
 weg_dns_queries_total{type,rcode,transport}
-weg_dns_query_duration_seconds
-weg_dns_response_size_bytes
+weg_dns_query_duration_seconds{transport}
+weg_dns_response_size_bytes{transport}
 weg_dns_queries_dropped_total{transport}
 weg_dns_responses_truncated_total{transport}
 weg_dns_notifications_total{outcome}
+weg_dns_under_load
+weg_dns_cookie_refusals_total{client}
 weg_secondary_probes_total{outcome}
 weg_secondary_serial_lag{target}
 weg_secondary_zones_behind{target}
@@ -59,10 +73,11 @@ weg_secondary_zones_unanswered{target}
 weg_snapshot_zones
 weg_snapshot_records
 weg_snapshot_published_timestamp_seconds
+weg_cluster_behind
 weg_build_info
 ```
 
-### The five worth an alert
+### The six worth an alert
 
 **`weg_snapshot_published_timestamp_seconds` stops moving** while writes are happening. The
 snapshot is what queries are answered from; if it stops being rebuilt, the server is
@@ -86,8 +101,15 @@ stands](/docs/secondaries/#where-each-secondary-stands) has what the states mean
 
 **`weg_snapshot_zones` falls.** Zones do not usually leave.
 
+**`weg_cluster_behind` is 1.** The member has left its cluster and is answering from data that
+no longer changes. It does not come back by itself; [a cluster](/docs/cluster/) says how to
+repair it. Each member reports on itself, so scrape every member.
+
 `weg_dns_responses_truncated_total` is worth a graph rather than an alert: some truncation is
 normal over UDP, a lot of it means clients are being pushed to TCP more than they should be.
+So is `weg_dns_under_load`, beside `weg_dns_cookie_refusals_total`: they say when the server
+could not keep up and whom that turned away, and [under load](/docs/under-load/) says what
+the two labels of the counter mean.
 
 ## What is not measured
 

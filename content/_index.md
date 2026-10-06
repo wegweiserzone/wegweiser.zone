@@ -11,10 +11,11 @@ interface, and have a working zone in five minutes without learning zonefile syn
 It is a side project, written by one person who got tired of editing zonefiles by hand.
 *Wegweiser* is German for signpost.
 
-Also here: authoritative UDP and TCP with EDNS0, zonefile import and export, outbound zone
-transfer to the secondaries you name, signed with TSIG, announced with NOTIFY and then asked
-what serial they actually hold, SQLite persistence, token authentication, Prometheus metrics.
-Single node.
+Also here: authoritative UDP and TCP with EDNS0 and DNS cookies, zonefile import and export,
+outbound zone transfer to the secondaries you name, signed with TSIG, announced with NOTIFY
+and then asked what serial they actually hold, SQLite persistence, token authentication,
+Prometheus metrics. One server, or a few of them as a [cluster](/docs/cluster/) that keeps
+itself in step without a database beside it.
 
 ### One record, two answers
 

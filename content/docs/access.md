@@ -56,7 +56,9 @@ needs `write` — with one exception in each direction.
 
 **Tokens and transfer keys need `admin` whatever the method is.** A `write` token that could
 mint an `admin` token would not be a `write` token, and a key that may transfer may take
-every zone on the server. Reading a key's secret is a `GET` and still needs `admin`.
+every zone on the server. Reading a key's secret is a `GET` and still needs `admin`. So do
+starting a [cluster](/docs/cluster/) and taking a member out of one, since either changes
+which machines hold every zone.
 
 **Ending your own session needs nothing beyond being signed in.** Logging out takes access
 away rather than using it, and a read-only session that could not log out would be one that

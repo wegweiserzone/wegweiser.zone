@@ -158,6 +158,20 @@ config`.
 [A second nameserver](/docs/secondaries/#where-each-secondary-stands) has the states and how
 often the questions are asked.
 
+## Cluster
+
+The members of the cluster this server belongs to, with the role each holds, which one leads
+and how far each has got. The server the page is served by asks every other member as it
+answers, so one that is off reads as not reached rather than as current.
+
+{{< screenshot "cluster" "The cluster screen: a plate naming this server and how far it has got, above a table of three members with their addresses, roles, how far each has got, and which one leads." >}}
+
+A server with a cluster section and no cluster yet offers to start one here, and then shows
+the line another server joins it with. With the `admin` scope, each row has a way to take that
+member out, and the server's own row is where it leaves; taking out a voter comes with a
+warning about the majority. A server that has left its cluster says so on every page, in the
+rail where the version otherwise is. [A cluster](/docs/cluster/) is the operator's side.
+
 ## Settings
 
 Three settings, server-wide, each in a panel of its own and grouped under what it belongs to:

@@ -21,7 +21,7 @@ that boundary; see invariant 2 in `docs/conventions.md`.
 
 The store is the source of truth. The snapshot is a derived cache and can always be rebuilt
 from the store. That direction is never reversed; it is what makes crash recovery trivial
-and what will make Raft state-machine replay correct later.
+and what makes replaying the cluster's log correct.
 
 ---
 
@@ -268,9 +268,10 @@ turns it into a `Command`. It does not accept a pre-computed diff. The server de
 diff, because only the server knows the current state, the reverse-automation rules and the
 validation constraints.
 
-This matters beyond tidiness: a `Command` is the unit Raft will replicate later. Building
-the write path around commands now means the cluster phase adds a transport, not a rewrite.
-See `docs/decisions/d19-journal-as-command-log.md`, amended on the unit of replication by
+This matters beyond tidiness. In a cluster a command is resolved once, on the leader, into
+a batch that says exactly what to write, and the batch is what the log carries. The cluster
+added a transport and a state machine to this path rather than rewriting it. See
+`docs/decisions/d19-journal-as-command-log.md`, amended on the unit of replication by
 `docs/decisions/d24-what-the-cluster-replicates.md`.
 
 {{< diagram "write-path" "A write travels from the HTTP request through the api handler, apply, and one store transaction, after which the snapshot is rebuilt and published." >}}
@@ -281,6 +282,12 @@ Writes are serialized **per zone** by a keyed mutex. Two zones commit concurrent
 writes to the same zone do not. Rationale: validation reads the current zone state and must
 not race with another write against it, and SOA serial allocation must be strictly ordered.
 Per-zone rather than global keeps a bulk import into one zone from stalling every other.
+
+In a cluster it is stricter: the leader plans one write at a time, and only after a Raft
+barrier has confirmed that everything committed before it is applied locally. Two plans made
+side by side could each claim the next serial of a reverse zone they both reach, and the
+second would then fail on every member at once. At the rate people edit zones, writes that
+are strictly sequential cost nothing worth designing around.
 
 Optimistic concurrency is exposed to clients through `ExpectedSerial`. If it is set and does
 not match, the commit fails with `ErrSerialMismatch` and the GUI can show "someone else
@@ -366,8 +373,27 @@ entire payoff of "the store is the source of truth".
 ### 3.6 Notification
 
 After a successful swap, subscribers are notified: the GUI over SSE for live zone updates,
-metrics, and later NOTIFY to secondaries and the Raft apply loop. All of this is after the
-swap, so a slow subscriber cannot delay visibility of the change.
+metrics, and NOTIFY to the secondaries, which in a cluster the leader sends alone
+(`docs/decisions/d41-what-follows-applying-a-batch.md`). All of this is after the swap, so a
+slow subscriber cannot delay visibility of the change.
+
+### 3.7 In a cluster
+
+Everything above happens on every member, with the log between planning a write and applying
+it. A write that arrives at a member that is not leading is forwarded to the one that is,
+over the cluster port, and answered with what the leader answered
+(`docs/decisions/d40-a-write-reaches-the-leader.md`). The leader plans it into a batch and
+appends the batch to the log. Once a majority holds it, every member applies the same batch
+through the same kind of transaction as above, with its position in the log written in that
+transaction too. That position is what makes applying an entry twice change things once, and
+it is what a member reports when asked how far it has got.
+
+A member that joins late does not replay the log from the beginning. It is sent a log
+snapshot, the whole replicated content at one position, and continues from there
+(`docs/decisions/d30-what-a-log-snapshot-contains.md`). A member that cannot apply an entry
+stops rather than skip it, and goes on answering queries with what it has
+(`docs/decisions/d29-a-node-that-cannot-apply.md`). [A cluster](/docs/cluster/) is the
+operator's side of all this.
 
 ---
 
@@ -376,13 +402,16 @@ swap, so a slow subscriber cannot delay visibility of the change.
 **Startup**
 
 1. Load bootstrap config: flags → environment → config file. Only bootstrap settings live
-   in the file (listen addresses, store DSN, TLS material). Everything else lives in the
-   database and is therefore reachable through the API; see
+   in the file (listen addresses, the database path, the cluster section). Everything else
+   lives in the database and is therefore reachable through the API; see
    `docs/decisions/d11-config-holds-bootstrap-only.md`.
 2. Open the store, run migrations, verify the schema version.
-3. Build the initial snapshot from the store, zone by zone, in parallel.
+3. Build the initial snapshot from the store, zone by zone, in parallel. In a cluster, start
+   the member; one started with `--join` asks a member, and waits for the log to reach it
+   before going on, so a new member never answers from an empty database.
 4. Bind sockets. `CAP_NET_BIND_SERVICE` handles port 53; the process never runs as root.
-5. Start the HTTP API and, on the first run, print the bootstrap admin token to stdout once.
+5. Start the HTTP API and, on the first run, print the bootstrap admin token to standard
+   error once. A member that joined prints none: the cluster's tokens came with its data.
 6. Only then report ready on `/healthz`. Serving before the snapshot is complete would mean
    answering NXDOMAIN for zones it actually holds: worse than not answering at all.
 
@@ -395,26 +424,31 @@ store last. In-flight write transactions either commit or roll back; there is no
 
 | Package | Owns | May import |
 | --- | --- | --- |
-| `internal/dns` | query path, trie, snapshots | `zone` (model only) |
-| `internal/zone` | zone/record model, validation, reverse automation |: |
-| `internal/config` | bootstrap settings: the file, the environment, the flags |, |
+| `internal/dns` | query path, trie, snapshots, cookies | `zone`, `journal` (types) |
+| `internal/zone` | zone/record model, validation, reverse automation | nothing |
+| `internal/zonefile` | RFC 1035 presentation format, in and out | `zone` |
+| `internal/config` | bootstrap settings: the file, the environment, the flags | nothing |
 | `internal/metrics` | Prometheus collectors and the exposition format | `dns` (events), `zone`, `buildinfo` |
 | `internal/stream` | the live query stream: filters, buffers, sampling | `dns` (events), `zone` |
-| `internal/store` | persistence, migrations, SQL | `zone`, `journal` (types) |
-| `internal/journal` | events, serials, applier, rollback | `zone`, `store` |
-| `internal/api` | HTTP, OpenAPI, auth, embedded GUI | `journal`, `store` (read), `dns` (snapshot read) |
-| `internal/cluster` | Raft, membership | `journal` |
-| `internal/tui` | Bubble Tea views | generated API client only |
-| `internal/cli` | Cobra commands, output formatting | generated API client, `api` (for the embedded server) |
+| `internal/id` | ULID primary keys | nothing |
+| `internal/journal` | commit and event types: data only | `zone`, `id` |
+| `internal/store` | the `Store` interface; `sqlite/` implements it | `zone`, `journal` |
+| `internal/apply` | the write path: commands to batches, serials, rollback, log snapshots | `store`, `journal`, `zone`, `id` |
+| `internal/publish` | copies the store into the query path after every batch | `apply`, `store`, `dns` |
+| `internal/cluster` | the cluster transport, the Raft member, membership | `apply`, `store`, `id` |
+| `internal/secondary` | configuration for the other end of a transfer | `zone` |
+| `internal/api` | HTTP, OpenAPI, auth, embedded GUI | the packages above, not `cli` or `config` |
+| `internal/cli` | Cobra commands, output formatting, and the wiring of `weg serve` | `api` and the rest |
 | `cmd/weg` | process entry point, signal handling | `cli` only |
 
 `internal/zone` has no dependencies on storage or transport. It is pure model and pure
 functions, which is what makes the validation and reverse-automation logic exhaustively
 table-testable without a database.
 
-The dependency direction is strictly one way: `cmd` → `cli` → `api` → `journal` → `store` →
-`zone`. `internal/dns` depends only on `zone`. Nothing imports `internal/api` except the
-wiring.
+The dependency direction is strictly one way: `cmd` → `cli` → `api` → `apply` → `store` →
+`zone`, with `cluster` and `publish` beside `api` on top of `apply`. `internal/dns` depends on
+`zone` and on the journal's types, and on nothing that writes. Nothing imports `internal/api`
+except the wiring.
 
 These rules are not a convention to remember. `depguard` in `.golangci.yml` encodes them, so
 crossing a boundary fails the build rather than the review.
@@ -425,12 +459,11 @@ crossing a boundary fails the build rather than the review.
 
 | Deferred feature | What already accommodates it |
 | --- | --- |
-| IXFR (RFC 1995) | journal commits are serial-framed delete/add sets: a direct replay |
-| AXFR | zone snapshot iteration in canonical order via `sort_key` |
-| Raft cluster | `Command` is the replicated unit; the applier is already an FSM in shape |
 | PostgreSQL | `Store` interface, no SQL outside `internal/store` |
 | DNSSEC | canonical ordering exists; `sort_key` gives NSEC chains their order for free |
 | Views / split-horizon | the snapshot is already a value: multiple named snapshots is an extension, not a redesign |
 
 None of these are built. The seams are placed so that building them does not require moving
-anything else.
+anything else, and three earlier entries in this table show that it works: IXFR is a replay
+of the journal's serial-framed commits, AXFR iterates a zone in `sort_key` order, and the
+cluster replicates the batch the applier already produced.

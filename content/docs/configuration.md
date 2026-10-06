@@ -70,6 +70,12 @@ appearing in a path nobody meant is worse than a refusal that names it.
 standard error; what a command produced goes to standard output, so the two can be
 redirected apart.
 
+**`cluster`** — only on a server that is, or is about to be, a member of a
+[cluster](/docs/cluster/): its identifier, where to listen for the other members, the address
+they reach it at, and the shared secret. Without it a server is a single server. It is read
+from the file and nowhere else, and [a cluster](/docs/cluster/#configuration) has what each
+key means.
+
 ## Four sources, one order
 
 A command-line flag beats an environment variable, which beats the file, which beats the

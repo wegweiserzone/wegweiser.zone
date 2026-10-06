@@ -28,17 +28,24 @@ $ curl -H "Authorization: Bearer $WEG_TOKEN" http://127.0.0.1:8053/api/v1/zones
 ```
 
 The scope a request needs comes from its method. `GET` needs `read`, anything that changes
-something needs `write`. Tokens, TSIG keys and the secondary's configuration are the
-exception and need `admin` whatever the method: a `write` token able to mint an `admin` token
-would not be a `write` token, and a key that may transfer may take every zone. Scopes are
-ordered, so `admin` satisfies a requirement for `read`.
+something needs `write`. Tokens, TSIG keys, the secondary's configuration, starting a
+cluster and taking a member out of one are the exception and need `admin` whatever the
+method: a `write` token able to mint an `admin` token would not be a `write` token, and a key
+that may transfer may take every zone. Scopes are ordered, so `admin` satisfies a requirement
+for `read`.
 
 Two endpoints need no credential. `GET /healthz`, because a load balancer has nowhere to put
 one, and `POST /auth/session`, because handing over a token is what it is for.
 
 ```json
-{ "status": "serving", "version": "v0.3.0", "zones": 2, "records": 7 }
+{"records":6,"status":"serving","version":"v0.5.0","zones":2}
 ```
+
+On a member of a cluster it carries `current` as well, false once the member has left.
+
+In a cluster, any member takes a write: one that does not lead hands it to the leader and
+answers with what the leader answered, so a client never needs to know which member leads.
+A read is answered by the member asked. [A cluster](/docs/cluster/) has the rest.
 
 ### From a browser
 
@@ -466,7 +473,7 @@ status code.
 
 ## Everything there is
 
-Thirty-seven operations. The spec is the authority; this is the map.
+Forty operations. The spec is the authority; this is the map.
 
 **Zones**
 
@@ -499,6 +506,14 @@ Thirty-seven operations. The spec is the authority; this is the map.
 | `GET POST /tsig-keys` · `DELETE` · `GET .../secret` | Transfer keys. `admin` |
 | `GET /secondary-config` | The configuration a secondary needs. `admin` |
 | `GET /secondary-status` | Where each secondary stands on each zone |
+
+**Cluster**
+
+| | |
+| --- | --- |
+| `GET /cluster` | The members, which one leads, and how far each has got, asking every other member as it answers |
+| `POST /cluster/init` | Start a cluster with this server as its first member. `admin` |
+| `DELETE /cluster/members/{id}` | Take a member out, this one included. `admin` |
 
 **Operations**
 

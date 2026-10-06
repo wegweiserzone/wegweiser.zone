@@ -127,3 +127,4 @@ Both directions, and only one of them was typed.
 - [Reverse zones](/docs/reverse-zones/) is the feature the second command above hinted at.
 - [History and rollback](/docs/history/) is what makes a mistake cheap.
 - [Running Wegweiser](/docs/deployment/) turns this into something that survives a reboot.
+- [A cluster](/docs/cluster/) is for when one server is not enough.

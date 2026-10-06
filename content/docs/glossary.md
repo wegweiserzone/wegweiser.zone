@@ -229,6 +229,55 @@ a cheap defence against off-path spoofing. Names are compared case-insensitively
 A UDP response too large to send gets the TC bit, and the client asks again
 over TCP.
 
+### DNS cookie
+
+A value a client sends with a query and a server answers with, bound to the
+client's address (RFC 7873, RFC 9018). It proves the client received an earlier
+answer at the address it claims, which a forged source never does. See [under
+load](/docs/under-load/).
+
+### BADCOOKIE
+
+The answer to a query whose server cookie is missing or no longer checks, with a
+fresh cookie in it. Sent only while the server is under load, and only over UDP.
+
+## A cluster
+
+### Cluster
+
+A few servers holding the same zones, kept in step through one replicated log.
+See [a cluster](/docs/cluster/).
+
+### Member
+
+A server, or a witness, that is part of a cluster. It is known by an identifier
+that never changes.
+
+### Leader
+
+The member every change goes through. The members elect it among themselves, and
+elect another when it goes away. A write sent to any other member is handed to it.
+
+### Voter and non-voter
+
+A voter counts towards the majority and can lead. A non-voter receives the whole
+log and answers queries like any member, and nobody waits for it.
+
+### Majority
+
+More than half of the voters: two of three, three of five. Below it a cluster
+takes no changes, and every member goes on answering queries.
+
+### Witness
+
+A voter that keeps the log, answers nothing and never leads, for two servers that
+want a third vote. See [a witness](/docs/witness/).
+
+### Log snapshot
+
+The whole replicated content at one position in the log. A member that joins
+late starts from one rather than replaying everything before it.
+
 ## This project's own words
 
 ### Snapshot
@@ -249,8 +298,9 @@ moved the zone to.
 
 ### Applied index
 
-How far a node has got through the replicated log. It exists for the
-clustering that is not built yet.
+How far a member has got through the cluster's log. It is written in the same
+transaction as the change it applies, which is what makes applying an entry
+twice change things once.
 
 ### Decision record
 

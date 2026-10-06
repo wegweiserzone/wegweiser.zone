@@ -187,6 +187,13 @@ What does need a decision is everything that leaves the machine:
 - **Support requests.** Do not attach the database to a bug report. Export the
   zone with `weg zone export` instead, which carries records and no secrets.
 
+**In a cluster there is a second directory.** Raft keeps its log and its snapshots in
+`wegweiser.raft` beside the database, and they carry the same secrets the database does. Back
+it up, restrict it and keep it out of bug reports on the same terms. To bring back a member
+that lost its disk, join it again with an empty database rather than restoring a copy; a
+backup is for the day the whole cluster is gone, when it is restored on one server and `weg
+cluster init` makes that server the first member of a new cluster.
+
 If none of that is acceptable, do not create TSIG keys. An address list
 (`weg settings set --transfer-allow`) holds no secrets at all, and on a private
 network under one administration it is enough. The
