@@ -23,6 +23,16 @@ serve: $(HUGO) ## Serve it locally with live reload
 check: build ## Build, then fail on a link that goes nowhere
 	scripts/check-links.sh httpdocs
 
+# The server repository, checked out beside this one. Its demo is what the
+# screenshots show, and its web/ directory has the browser that takes them.
+WEG ?= ../wegweiser
+
+.PHONY: screenshots
+screenshots: ## Take every screenshot again, in both themes, from a demo of ../wegweiser
+	@test -d $(WEG)/web/node_modules || { echo "$(WEG)/web/node_modules is missing; run 'make web-deps' there"; exit 1; }
+	$(MAKE) -C $(WEG) demo
+	node scripts/screenshots.mjs $(ONLY); status=$$?; $(MAKE) -C $(WEG) demo-stop; exit $$status
+
 .PHONY: hooks
 hooks: ## Install the pre-commit hook that keeps the upload password out
 	@ln -sf ../../scripts/pre-commit .git/hooks/pre-commit
