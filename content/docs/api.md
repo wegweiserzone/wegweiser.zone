@@ -118,14 +118,33 @@ $ curl ... -d '{"name":"www.example.com.","type":"A","data":"192.0.2.10"}' \
 which is how the server knows to keep the two in step and how a client can show the link.
 [Reverse zones](/docs/reverse-zones/) covers when this happens and how to turn it off.
 
-Three fields report on the reverse half, and **all three arrive on a `201`**. A client that
-looks only at the status code will not see them.
+Four fields report on the reverse half, and **they arrive with a success status**. A client
+that looks only at the status code will not see them.
 
 | | |
 | --- | --- |
 | `generated` | Records the server wrote as a consequence |
+| `removed` | Records the server took away as a consequence, such as the `PTR` of an address that was changed or disabled |
 | `conflicts` | The write went in, but a reverse entry did not, and here is why |
 | `missingZones` | The reverse zone that would have held an entry does not exist |
+
+Deleting a record answers the same way, with the record as it was and what went with it:
+
+```console
+$ curl ... -X DELETE .../records/{id}
+```
+```json
+{
+  "record": { "name": "www.example.com.", "type": "A", "data": "192.0.2.10", "…": "…" },
+  "removed": [
+    {
+      "zoneName": "2.0.192.in-addr.arpa.",
+      "name": "10.2.0.192.in-addr.arpa.", "type": "PTR",
+      "data": "www.example.com.", "ttl": 3600
+    }
+  ]
+}
+```
 
 A second name for an address that already reverses:
 
@@ -155,7 +174,7 @@ has to handle both:
   "type": "/problems/conflict",
   "title": "Conflict",
   "status": 409,
-  "detail": "store: conflict: 192.0.2.10 already reverses to \"www.example.com.\", and this server is set to refuse a second name for one address; remove that entry, detach it, or change the reverse policy"
+  "detail": "192.0.2.10 already reverses to \"www.example.com.\", and this server is set to refuse a second name for one address; remove that entry, detach it, or change the reverse policy"
 }
 ```
 
@@ -245,16 +264,17 @@ serial is visible as exactly that, and both commits carry the one timestamp the 
 accepted at rather than one each.
 
 `?source=` narrows the listing to those causes, repeatably. The four are `api`, `cli`,
-`import` and `system`, and `system` is the server's own doing:
+`import` and `system`. `cli` is a request whose `User-Agent` begins `weg/`, `import` a
+zonefile brought in whichever client sent it, and `system` the server's own doing:
 
 ```console
-$ curl ... ".../commits?source=api&source=cli"    # what people did
+$ curl ... ".../commits?source=api&source=cli&source=import"    # what people did
 ```
 
 On a zone with reverse automation the `system` entries are most of them, so leaving them out
 is what a history somebody reads looks like, and asking for them alone is what checks the
-automation. The interface opens on the first of those and `weg history list --source` is the
-same filter.
+automation. The interface and `weg history list` both open on the first of those, and
+`--all` and `--source` are the same choices on the command line.
 
 `GET /commits/{id}` adds the records the commit touched. So does a rollback, which is worth
 looking at closely:
@@ -451,7 +471,7 @@ RFC 7807, as `application/problem+json`:
   "title": "The request was understood but cannot be carried out",
   "status": 422,
   "instance": "/api/v1/zones/01M1EPDVX83PDK1T40C1GPF0YH/records",
-  "detail": "invalid: \"sub.example.com.\" delegates to another zone, so its TXT record would never be answered; a query for that name is referred to the child (RFC 1034 §4.2.1)"
+  "detail": "\"sub.example.com.\" delegates to another zone, so its TXT record would never be answered; a query for that name is referred to the child (RFC 1034 §4.2.1)"
 }
 ```
 
@@ -511,7 +531,7 @@ Forty operations. The spec is the authority; this is the map.
 
 | | |
 | --- | --- |
-| `GET /cluster` | The members, which one leads, and how far each has got, asking every other member as it answers |
+| `GET /cluster` | The members, which one leads, and how far each has got, asking every other member as it answers; `quorum` counts the voters, how many a write needs and how many answered |
 | `POST /cluster/init` | Start a cluster with this server as its first member. `admin` |
 | `DELETE /cluster/members/{id}` | Take a member out, this one included. `admin` |
 
@@ -556,7 +576,7 @@ honest: a change that breaks the contract breaks the build before it reaches you
 Three things to hold on to, none of which a generated client will tell you:
 
 1. Send fully-qualified names, with the trailing dot.
-2. Read `generated`, `conflicts` and `missingZones` on every successful write.
+2. Read `generated`, `removed`, `conflicts` and `missingZones` on every successful write.
 3. A 201 is not proof that the reverse half went the way you expected.
 
 ## What is not here yet

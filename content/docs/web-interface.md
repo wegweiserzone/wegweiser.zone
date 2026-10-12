@@ -12,7 +12,7 @@ command line and [your own client](/docs/api/) can do too.
 It listens on loopback until you say otherwise. [Access](/docs/access/) covers exposing it
 and why the default is what it is.
 
-{{< screenshot "overview" "The overview screen: status, uptime, zone and record counts, queries answered, and the rate right now, above a queries-per-second line." >}}
+{{< screenshot "overview" "The overview screen: a line each for what the server answers for, whether its cluster takes writes and whether the secondaries are in step, above uptime, zone and record counts, queries answered and the rate right now, and a queries-per-second line." >}}
 
 ## Signing in
 
@@ -27,12 +27,24 @@ A session that may only read still sees everything. The controls it cannot use s
 *Read only* or *This session may not manage tokens*, rather than quietly disappearing. An
 interface that hides what you are not allowed to do teaches you the wrong shape of the system.
 
+The same goes for a cluster that has lost its majority. Every page then says so in a band
+across the top, with the counts, and where a button would change something it reads *No
+writes* instead.
+
 ## Overview
 
-Six numbers across the top: status, uptime, zones, records, queries answered since start, and
-the rate right now. Under them the queries-per-second line for the last two minutes, then
-three breakdowns: answers by response code, questions by type, and a latency histogram.
-Then the most recent changes and the age of the snapshot being served.
+It opens with how the server stands, a line each: what it answers for, whether its cluster
+takes writes and how many voters it can lose, and whether the secondaries hold what it
+publishes. Each line leads to the page that explains it, and one with nothing to say is left
+out.
+
+Below that, five numbers: uptime, zones, records, queries answered since start, and the rate
+right now. Then the queries-per-second line for the last two minutes, which starts when the
+page was opened, and three breakdowns: answers by response code, questions by type, and a latency histogram. Then the
+most recent changes, and the session you are signed in with.
+
+A server with no zones yet says so and offers to create one or import a zonefile, above
+charts that would otherwise be empty.
 
 The counters come from `/metrics`. If that cannot be read the screen says so and carries on,
 because everything else on it comes from somewhere else.
@@ -40,17 +52,24 @@ because everything else on it comes from somewhere else.
 ## Zones and records
 
 Zones lists what this server holds with kind, serial, default TTL, primary name server, state
-and when it last changed, narrowing as you type. Creating one takes a name, and a network is
-accepted wherever a name is: `192.0.2.0/24` becomes the reverse zone that answers for that
-range, without anyone reversing the octets by hand.
+and when it last changed, narrowing as you type. The name server is written as a zonefile
+would write it, `ns1` rather than the zone name a second time. Creating one takes a name, and
+a network is accepted wherever a name is: `192.0.2.0/24` becomes the reverse zone that answers
+for that range, without anyone reversing the octets by hand.
 
-Opening a zone gives its records in a dense table with the search across the top, and four
-tabs: **Records**, **Check**, **Settings** and **History**. History lands in the server-wide
-history already narrowed to this zone. Export sits beside them and writes the zone out as a
-zonefile.
+Colour is kept for what is not as it should be. A zone that serves is not green on every row,
+so that a disabled one stands out, and the same goes for tokens, keys, cluster members,
+secondaries and the response codes in the query stream. A listing that fits on one page has
+no pager under it.
 
-Records the server generated and maintains carry a `generated` chip. Editing one tells you
-what you are about to take over.
+Opening a zone gives one line of facts (kind, serial, default TTL, when it changed) and its
+records in a dense table with the search across the top, and four tabs: **Records**,
+**Check**, **Settings** and **History**. History lands in the server-wide history already
+narrowed to this zone. Export sits beside them and writes the zone out as a zonefile.
+
+A record the server generated and maintains says `generated` beside its data, and the zone's
+own name servers say `zone`. Editing a generated one tells you what you are about to take
+over.
 
 ### The record editor
 
@@ -73,8 +92,13 @@ who does can read the line and confirm it.
 **Edit as one line** drops back to the raw rdata whenever the fields are in the way. Pasting
 a record from somewhere else is one field, not four.
 
+**An address is checked as you leave the field**, in the words the server would refuse it
+with, and *Add record* waits until it is right. An IPv6 address typed for an `A` record is
+pointed at `AAAA`, and the other way round.
+
 **Any type is accepted**, including one with no mnemonic, in the `TYPE65534` form of RFC 3597.
 The server stores those, so a control that refused them would be lying about what it can hold.
+The note saying so appears only for a type the list does not know.
 
 The name field is relative to the zone, and `@` or empty means the apex. This is the one place
 the interface and the API differ: [the API takes absolute names](/docs/api/#names-are-absolute)
@@ -94,13 +118,14 @@ until you press one of them.
 
 ## Query stream
 
-The queries as they are answered: source, name, type, response code, size and latency, above a
-per-second line and a latency histogram. Truncated answers are marked `TC`.
+The queries as they are answered: source, transport, name, type, response code, size and
+latency, above a per-second line and a latency histogram. Truncated answers are marked `TC`.
 
 {{< screenshot "stream" "The query stream: a live table of answered queries with response codes and latencies, above a queries-per-second line." >}}
 
 Filter by a name and everything below it, or by one address or network. Both are applied on
-the server, so watching one zone stays complete however busy the rest of the server gets.
+the server, so watching one zone stays complete however busy the rest of the server gets. A
+filter that has matched nothing yet says so, and offers to clear it.
 
 Under load the stream samples rather than slowing the query path down, and says so while it is
 doing it, with the ratio. A graph that quietly stops being the whole truth is worse than one
@@ -108,10 +133,13 @@ that admits it.
 
 ## History
 
-Every change, newest first, with the diff of any of them beside it and a button to put the
-zone back to the state before it.
+Every change, newest first, with the diff of any of them beside it. Each row says which
+record changed and how, as in `change www A 192.0.2.10 → 192.0.2.11`.
 
-{{< screenshot "history" "The history screen on Everything: commits on the left with the entries the server wrote itself set below the change that caused them and marked followed, and the diff of the selected one on the right, with a button to revert to that state." >}}
+{{< screenshot "history" "The history screen on Everything: commits on the left with the entries the server wrote itself set below the change that caused them and marked followed, and the diff of the selected one on the right, with a button to restore the serial it produced." >}}
+
+**Restore serial** puts the zone back as it was right after the chosen change, at the serial
+the change produced. To undo a change, choose the one before it.
 
 It opens on **What people did**. Changing an address record writes the matching change in the
 reverse zone, and that arrives as its own commit, in its own zone, with the comment the server
@@ -160,17 +188,22 @@ often the questions are asked.
 
 ## Cluster
 
-The members of the cluster this server belongs to, with the role each holds, which one leads
-and how far each has got. The server the page is served by asks every other member as it
-answers, so one that is off reads as not reached rather than as current.
+It opens with the answer: whether the cluster takes writes, and how many voters it can lose
+before it stops, beside the voters drawn as seats with the majority marked. Below that the
+members, with the role each holds, which one leads and how far each has got. The server the
+page is served by asks every other member as it answers, so one that is off reads as not
+reached, with why under it, rather than as current. The page asks again every five seconds
+while it is open.
 
-{{< screenshot "cluster" "The cluster screen: a plate naming this server and how far it has got, above a table of three members with their addresses, roles, how far each has got, and which one leads." >}}
+{{< screenshot "cluster" "The cluster screen: whether the cluster takes writes and how many voters it can lose, beside a row of voter seats, above a table of three members with their addresses, roles, how far each has got, and which one leads." >}}
 
-A server with a cluster section and no cluster yet offers to start one here, and then shows
-the line another server joins it with. With the `admin` scope, each row has a way to take that
-member out, and the server's own row is where it leaves; taking out a voter comes with a
-warning about the majority. A server that has left its cluster says so on every page, in the
-rail where the version otherwise is. [A cluster](/docs/cluster/) is the operator's side.
+A server with a cluster section and no cluster yet offers to start one here. **Add a server**
+says what to write on the next one: its cluster section, and the command it joins with, or
+the same for a witness. With the `admin` scope, each row has a way to take that member out,
+and the server's own row is where it leaves. Before it asks, the dialog says what the change
+does to the majority, in numbers. A server that has left its cluster, or a cluster with no
+voter to spare, says so on every page, in the rail where the version otherwise is.
+[A cluster](/docs/cluster/) is the operator's side.
 
 ## Settings
 
@@ -192,20 +225,29 @@ above reports.
 ## The keyboard
 
 `Ctrl+K` opens the command palette: anywhere in the interface, any zone by name, the theme,
-and signing out.
+and signing out. It starts things too: a new zone, record, token or key, an import, and the
+check or the history of the zone on the screen, which come first. Each opens the same dialog
+the page's own button does.
 
-{{< screenshot "palette" "The command palette, listing every place with its shortcut and every zone by name." >}}
+{{< screenshot "palette" "The command palette, listing every place with its shortcut, what can be started from it, and every zone by name." >}}
 
 Without it:
 
 | | |
 | --- | --- |
-| `g` then `o` `z` `s` `h` `t` `k` `,` | Overview, Zones, Query stream, History, Tokens, Keys, Settings |
+| `g` then `o` `z` `s` `h` `2` `c` `t` `k` `,` | Overview, Zones, Query stream, History, Secondaries, Cluster, Tokens, Keys, Settings |
 | `/` | Focus whatever the current screen filters by |
-| `↑` `↓` `↵` `Esc` | Move, open, close — in the palette and in tables |
+| `↑` `↓` `↵` `Esc` | Move, open, close, in the palette and in tables |
 
-Secondaries has no letter of its own yet, and the palette does not list it; the rail is
-the way there.
+The palette lists the places in the order of the rail, each with its letter.
+
+## On a phone
+
+Below tablet width the rail waits behind a button in a bar across the top, which keeps the
+line about how the server stands, and goes away again once you have chosen. Every table keeps
+the columns that answer its question: a record's name, type and data, a query's name, type,
+answer and how long it took. The buttons on a row, which a mouse finds by pointing, are always
+there on a touch screen.
 
 ## Light and dark
 

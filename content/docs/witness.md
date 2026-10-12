@@ -92,13 +92,17 @@ and how far it has got:
 
 ```console
 $ weg cluster status
-ns1 at 127.0.0.1:8054: applied 7 of 7, current
+cluster  takes writes, and can lose one voter: 3 of 3 voters answered, 2 needed
+asked    ns1 at 127.0.0.1:8054, applied 7 of 7, current
 
 MEMBER                    ADDRESS         ROLE     LOG
-ns1 (this one)            127.0.0.1:8054  voter    current  leader
+ns1 (this one, leader)    127.0.0.1:8054  voter    current
 ns2                       127.0.0.1:8064  voter    current
 witness-779d7443496e57f1  127.0.0.1:8094  witness  current
 ```
+
+The witness is one of the three voters the first line counts, which is the point of it: two
+servers and a witness can lose any one of the three and go on taking writes.
 
 A second witness beside two servers would be half of the voters, and is turned away:
 

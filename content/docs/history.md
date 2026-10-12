@@ -14,14 +14,16 @@ incremental zone transfer, so it cannot fall behind without transfers breaking t
 ```console
 $ weg history list example.com
 WHEN                 ZONE          SERIAL  KIND         WHO        COMMENT
-2026-08-30 00:44:49  example.com.  3→4     edit         bootstrap  update record
-2026-08-30 00:44:24  example.com.  2→3     edit         bootstrap  add record
+2026-08-30 00:44:49  example.com.  2→3     edit         bootstrap  change www A 192.0.2.10 → 192.0.2.99
+2026-08-30 00:44:24  example.com.  1→2     edit         bootstrap  add www A 192.0.2.10
 2026-08-30 00:44:11  example.com.  0→1     zone_create  bootstrap  create zone
 ```
 
-Without a zone name it lists everything the server has ever done, which outlives the zones
-themselves: "who deleted example.com" is a question worth being able to answer after the
-zone is gone.
+Each commit says which record it touched and what happened to it, so a listing that leaves
+the changes themselves out still tells one edit from the next.
+
+Without a zone name it lists every zone's history, which outlives the zones themselves: "who
+deleted example.com" is a question worth being able to answer after the zone is gone.
 
 The serial column is the point. One commit advances it by exactly one, so the history is a
 contiguous chain rather than a log beside the data.
@@ -30,16 +32,21 @@ contiguous chain rather than a log beside the data.
 
 One change to an address record writes the reverse entry too, in a zone nobody named, and
 that arrives as a commit of its own. Both are real history and only one of them is something
-a person did, so the history can be read by what caused it:
+a person did, so the listing shows what people did unless asked for more:
 
 ```console
-$ weg history list --source api --source cli
+$ weg history list --all
+WHEN                 ZONE                   SERIAL  KIND         WHO        COMMENT
+2026-08-30 00:44:49  2.0.192.in-addr.arpa.  2→3     edit         bootstrap  reverse entries kept in step with example.com.
+2026-08-30 00:44:49  example.com.           2→3     edit         bootstrap  change www A 192.0.2.10 → 192.0.2.99
+…
 ```
 
-The causes are `api`, `cli`, `import` and `system`. `system` is the server's own doing, which
-in practice means the reverse entries it kept in step with a change somebody made — on a zone
-with reverse automation, most of the entries. Leaving them out is usually what you want;
-putting them back is how you check what the automation actually did:
+The causes are `api`, `cli`, `import` and `system`. `cli` is a change made with `weg`,
+`import` a zonefile brought in, and `system` the server's own doing, which in practice means
+the reverse entries it kept in step with a change somebody made: on a zone with reverse
+automation, most of the entries. `--source` picks any of them, which is how you check what
+the automation actually did:
 
 ```console
 $ weg history list example.com --source system
@@ -58,32 +65,33 @@ those commits means anything it was not meant to.
 
 ```console
 $ weg history show 01M17V4VY90Y5WJ33Q9YNGW7N3
-01M17V4VY90Y5WJ33Q9YNGW7N3  2026-08-30 00:44:49  edit  serial 3→4  by bootstrap
-update record
+01M17V4VY90Y5WJ33Q9YNGW7N3  2026-08-30 00:44:49  edit  serial 2→3  by bootstrap
+change www A 192.0.2.10 → 192.0.2.99
 
 -www.example.com. 3600 IN A 192.0.2.10
 +www.example.com. 3600 IN A 192.0.2.99
 ```
 
 A real diff, in the presentation format the records are stored in, so it says exactly what a
-zonefile would have said. The web interface shows the same thing side by side, with a button
-to put the zone back to the state before it.
+zonefile would have said. The web interface shows the same thing side by side, with a
+button, *Restore serial*, that puts the zone back as it was right after the chosen change.
+To undo a change, restore the serial before it.
 
 ## Going back
 
 ```console
-$ weg zone rollback example.com 3
-weg: no terminal to ask on: pass --yes to put example.com. back to the state it had at serial 3
+$ weg zone rollback example.com 2
+weg: no terminal to ask on: pass --yes to put example.com. back to the state it had at serial 2
 ```
 
 It asks first, and in a script it refuses to guess:
 
 ```console
-$ weg zone rollback example.com 3 --yes --comment "the address change was a mistake"
-example.com. is back at the state it had at serial 3 — 2 record changes, now serial 5
+$ weg zone rollback example.com 2 --yes --comment "the address change was a mistake"
+example.com. is back at the state it had at serial 2 — 2 record changes, now serial 4
 ```
 
-Note the serial: it went forward, to 5. A rollback works out the difference between the
+Note the serial: it went forward, to 4. A rollback works out the difference between the
 current state and the one you named, then writes that difference as a new commit. The history keeps the mistake and the correction, and a secondary sees an
 ordinary change it can transfer incrementally. A rewound serial would make every secondary
 think its copy was newer than the primary's, which is how a mistake becomes an outage.

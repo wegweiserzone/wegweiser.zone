@@ -39,7 +39,10 @@ serial the file carried, and steps by one from there.
 
 ```console
 $ weg zone disable example.com
+disabled example.com., serial 6 → 7
+  answered as though this server held nothing; `weg zone enable example.com.` brings it back
 $ weg zone enable example.com
+enabled example.com., serial 7 → 8
 ```
 
 A disabled zone stays in the database with all its records and stops being answered for
@@ -72,15 +75,23 @@ updated www.example.com. 3600 IN A 192.0.2.11
      from www.example.com. 3600 IN A 192.0.2.10
 ```
 
-Without the data, `delete` removes the whole set at that name and type. That is occasionally
-what you want and never what you want by accident, so it is worth being explicit.
+Without the data, the name and the type have to identify exactly one record. Where they do
+not, the candidates are listed and nothing is changed, because guessing which of several a
+person meant is how the wrong one goes.
 
 ### Switching a record off
 
 ```console
 $ weg record disable example.com www A 192.0.2.10
+disabled www.example.com. 3600 IN A 192.0.2.10
+  removed 10.2.0.192.in-addr.arpa. 3600 IN PTR www.example.com.
 $ weg record enable example.com www A 192.0.2.10
+enabled www.example.com. 3600 IN A 192.0.2.10
+  generated 10.2.0.192.in-addr.arpa. 3600 IN PTR www.example.com.
 ```
+
+Where reverse automation wrote a PTR for the address, it goes with the record and comes back
+with it, and both are said, as `delete` says which PTR it took away.
 
 A disabled record is kept, is not answered with, and is left out of a zonefile export: a
 file has nowhere to say "present but switched off". It is how you take something out of

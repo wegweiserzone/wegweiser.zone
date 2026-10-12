@@ -25,8 +25,9 @@ const token = readFileSync(path.join(demo, "ns1/log"), "utf8").match(/weg_[A-Za-
 if (!token) throw new Error(`no token in ${demo}/ns1/log; is the demo running?`);
 
 // --- traffic -------------------------------------------------------------------
-// The overview and the stream are empty without queries, and the demo asks
-// some only when dig is installed. These are sent straight over UDP.
+// The demo asks two questions a second of its own. The overview and the
+// stream look better with more, so these are sent straight over UDP while
+// those two are taken.
 
 const TYPES = { A: 1, NS: 2, SOA: 6, PTR: 12, MX: 15, TXT: 16, AAAA: 28, ANY: 255 };
 const ASKED = [

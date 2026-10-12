@@ -36,8 +36,19 @@ a different status code.
 
 ```console
 $ weg status
-no queries answered yet: the snapshot holds 2 zones, 6 records
+serving      2 zones, 6 records
+cluster      takes writes, and can lose one voter: 3 of 3 voters answered, 2 needed
+secondaries  all 2 copies in step
+
+no queries answered yet
 ```
+
+It opens with how the server stands, a line each: what it serves, whether its cluster takes
+writes and how many voters it can lose, and how many copies on secondaries are known to be in
+step. A server with no cluster, or nobody on its notify list, leaves that line out. Below
+them come the queries answered, by response code, by question type and by latency.
+`--output json` carries the two lines as `cluster` and `secondaries`, beside every field it
+had before.
 
 For the live view, `weg query tail` follows queries as they are answered, filtered
 server-side:

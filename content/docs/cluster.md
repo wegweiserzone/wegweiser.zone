@@ -96,8 +96,8 @@ Every other server joins from its first start, with an empty database:
 
 ```console
 $ weg serve --join 127.0.0.1:8054
-weg is answering on 127.0.0.1:5302 — 1 zones, 3 records from wegweiser.db
-the API is on http://127.0.0.1:8063
+weg is answering on 127.0.0.1:5302 — 1 zone, 3 records from wegweiser.db
+the API and the web interface are on http://127.0.0.1:8063
 this node is a cluster member, as ns2 on 127.0.0.1:8064; Raft keeps its log in wegweiser.raft
 ```
 
@@ -118,32 +118,39 @@ towards the majority.
 
 ```console
 $ weg cluster status
-ns1 at 127.0.0.1:8054: applied 10 of 10, current
+cluster  takes writes, and can lose one voter: 3 of 3 voters answered, 2 needed
+asked    ns1 at 127.0.0.1:8054, applied 59 of 59, current
 
-MEMBER          ADDRESS         ROLE      LOG
-ns1 (this one)  127.0.0.1:8054  voter     current  leader
-ns2             127.0.0.1:8064  voter     current
-ns3             127.0.0.1:8074  nonvoter  current
+MEMBER                  ADDRESS         ROLE   LOG
+ns1 (this one, leader)  127.0.0.1:8054  voter  current
+ns2                     127.0.0.1:8064  voter  current
+ns3                     127.0.0.1:8074  voter  current
 ```
 
-The server asked lists the members as its copy of the log has them, and asks every other
-member how far it has got. One that has not answered within two seconds is listed as not
-reached, with the reason underneath:
+The first line is the answer: whether the cluster takes writes, and how many more voters it
+can lose before it stops. The server asked lists the members as its copy of the log has
+them, and asks every other member how far it has got. One that has not answered within two
+seconds is listed as not reached, with the reason underneath, and the first line counts it:
 
 ```console
 $ weg cluster status
-ns1 at 127.0.0.1:8054: applied 12 of 12, current
+cluster  takes writes, and the next voter lost stops them: 2 of 3 voters answered, 2 needed
+asked    ns1 at 127.0.0.1:8054, applied 59 of 59, current
 
-MEMBER          ADDRESS         ROLE      LOG
-ns1 (this one)  127.0.0.1:8054  voter     current      leader
-ns2             127.0.0.1:8064  voter     current
-ns3             127.0.0.1:8074  nonvoter  not reached
+MEMBER                  ADDRESS         ROLE   LOG
+ns1 (this one, leader)  127.0.0.1:8054  voter  current
+ns2                     127.0.0.1:8064  voter  current
+ns3                     127.0.0.1:8074  voter  not reached
+
+ns3: not reached: connection refused
 ```
 
-Not reached is all it says, because from the network a machine that is off and one that
-cannot be reached look the same. A member a few entries behind for a moment is keeping up;
-one that stays behind is worth looking at. The Cluster page in the web interface shows the
-same, and `-o json` gives it to a script.
+The reason is what the network said, in a few words: refused, or no answer within two
+seconds. From the network a machine that is off and one that cannot be reached look the same,
+so it says no more than that. A member a few entries behind for a moment is keeping up; one
+that stays behind is worth looking at. `--watch` asks again every two seconds, the Cluster
+page in the web interface shows the same and asks every five, and `-o json` gives it to a
+script, with the counts as `quorum`.
 
 ## Writing to it
 
@@ -191,10 +198,18 @@ $ weg cluster remove ns3 --yes
 took ns3 out of the cluster; if it is running, it answers queries with what it held and refuses writes
 ```
 
-Both need the `admin` scope and ask before acting unless given `--yes`. The cluster's only
-voter cannot be removed. **Take out a member that is off before one that is running**:
-removing a running voter while another is off can leave the rest without a majority, and then
-nothing more can be changed, the removal of the dead one included.
+Both need the `admin` scope and ask before acting unless given `--yes` (or `-y`). The
+cluster's only voter cannot be removed. **Take out a member that is off before one that is
+running**: removing a running voter while another is off can leave the rest without a
+majority, and then nothing more can be changed, the removal of the dead one included.
+
+That is why both say, before they ask, what the change does to the majority. With ns3 off,
+taking out ns2, which answers, would stop the writes:
+
+```console
+$ weg cluster remove ns2
+Afterwards 2 voters remain, 1 of them answered here, and 2 are needed: the cluster would take no writes.
+```
 
 A member that has been taken out keeps answering queries with what it held, and refuses
 writes. It does not turn into a single server by itself, because a server still in a

@@ -34,21 +34,20 @@ The first start prints something once:
 ```console
 $ weg serve
 weg is answering on [::]:53 — 0 zones, 0 records from ./wegweiser.db
-the API is on http://127.0.0.1:8053
-weg: this is the first start. The administrator token is shown once:
+the API and the web interface are on http://127.0.0.1:8053
+weg: this is the first start. The administrator token is shown once, as the
+line that hands it to weg in another shell:
 
-    weg_NcjjAGWC…
+    export WEG_TOKEN=weg_NcjjAGWC…
 
 Store it now; only its hash is kept.
+The web interface at http://127.0.0.1:8053 signs in with it too.
 ```
 
 That token is the administrator credential. It is shown once because what the database
 holds is a hash of it, so there is nothing to show a second time. Put it somewhere a
-password manager would go, and export it for the shell you work in:
-
-```console
-$ export WEG_TOKEN=weg_…
-```
+password manager would go, and run the `export` line in the shell you work in. On an API
+address other than the default, the line sets `WEG_SERVER` as well.
 
 Then open <http://127.0.0.1:8053> and paste the same token into the sign-in field, or keep
 working on the command line. Both reach the same server through the same API; nothing is

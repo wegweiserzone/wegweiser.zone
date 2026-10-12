@@ -309,6 +309,8 @@ So it is asked.
 
 ```console
 $ weg secondary status
+2 of 4 copies not known to be in step: 1 behind, 1 unasked
+
 SECONDARY         ZONE                   STATE    SERIAL  BEHIND  ASKED
 192.0.2.53:53     example.com.           in step  7       -       2m ago
 192.0.2.53:53     2.0.192.in-addr.arpa.  in step  4       -       2m ago
@@ -316,7 +318,9 @@ SECONDARY         ZONE                   STATE    SERIAL  BEHIND  ASKED
 198.51.100.53:53  2.0.192.in-addr.arpa.  unasked  -       -       never
 ```
 
-One line per zone per address on the notify list. Who is asked is who is told:
+It opens with what the table adds up to, which names the rows worth reading. Then one
+line per zone per address on the notify list. Who is
+asked is who is told:
 there is no second list to fill in and keep in step with the first, and a
 notify list nobody has filled in has nothing to report here.
 
