@@ -149,6 +149,8 @@ section by section. Every name in an answer asks about itself, so an alias or a 
 be followed by clicking, and the question stays in the address to be sent on.
 [Asking what it answers](/docs/ask/) has the kinds and what each means.
 
+{{< screenshot "ask" "The Ask page for an address in a classless delegation: headed An alias, with the CNAME into the child zone and the PTR it leads to, and the questions asked before listed beside it." >}}
+
 ## History
 
 Every change, newest first, with the diff of any of them beside it. Each row says which

@@ -121,6 +121,8 @@ and says `refused`.
 there. It leads with the kind of answer, then the response code, the zone and the records,
 section by section, and a copy as a zonefile writes it underneath.
 
+{{< screenshot "ask" "The Ask page for 200.0.168.192.in-addr.arpa PTR: headed An alias, NOERROR and authoritative from 0.168.192.in-addr.arpa, with the CNAME into the classless child zone 192/26 and the PTR it leads to, and the questions asked before listed beside it." >}}
+
 Every name in an answer asks about itself. Clicking the target of an alias, a name server in a
 referral or the exchange of an `MX` asks the next question, so a chain can be walked without
 typing it. The question is kept in the address, which means it can be sent to somebody else

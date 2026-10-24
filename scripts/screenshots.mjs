@@ -100,6 +100,16 @@ const scenes = {
     await page.waitForTimeout(4000);
     clearInterval(traffic);
   },
+  async ask(page) {
+    // An address in a classless delegation: the CNAME of RFC 2317 leads into
+    // the child zone, which is the answer worth explaining. The question
+    // before it fills the list beside the answer.
+    await page.goto(`${base}/ask?name=www.example.com&type=A`);
+    await page.getByText("An alias", { exact: true }).waitFor();
+    await page.goto(`${base}/ask?name=200.0.168.192.in-addr.arpa&type=PTR`);
+    await page.getByText("An alias", { exact: true }).waitFor();
+    await page.waitForTimeout(300);
+  },
   async history(page) {
     await page.goto(`${base}/history`);
     await page.getByRole("button", { name: "Everything" }).click();
