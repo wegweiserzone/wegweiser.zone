@@ -76,3 +76,23 @@ masthead overrules it and is remembered in the browser. Both designs therefore h
 hold up, and every screenshot ships as a pair — `assets/img/<name>-light.webp` and
 `-dark.webp`, the same screen in both. The `screenshot` shortcode refuses to build without
 both files, and `content/datenschutz.md` names what the switch leaves behind.
+
+## Licence
+
+The site is made of three kinds of thing, and each is licensed for what it is used for.
+
+**The code that builds it**, the layouts, styles, scripts, the Makefile and the workflow, is
+under the GNU Affero General Public License v3.0 or any later version
+(`AGPL-3.0-or-later`), as the server and the witness are. The text is in [LICENSE](LICENSE).
+
+**The writing and the pictures**, everything in `content/`, `assets/img/`,
+`assets/diagrams/` and `static/img/`, is under [Creative Commons Attribution-ShareAlike
+4.0](https://creativecommons.org/licenses/by-sa/4.0/) (`CC-BY-SA-4.0`). Reuse them with
+credit, and pass on what you change under the same terms.
+
+**The examples in the documentation**, the commands and configuration meant to be copied
+into a terminal or a file, are dedicated to the public domain under [CC0
+1.0](https://creativecommons.org/publicdomain/zero/1.0/). A systemd unit or a resolver
+configuration taken from these pages brings no conditions with it.
+
+**The fonts** keep their own licence, the SIL Open Font License 1.1, as above.
