@@ -67,7 +67,9 @@ is not. Set `version` in a page's front matter to pin the claim — either to ho
 back after a small edit, or to move it up after re-reading it changed nothing.
 
 Colours and type come from `web/src/app.css` in the server repository. Fonts are
-self-hosted.
+self-hosted, and served with the SIL Open Font License they come under: its text for each
+family sits beside the files in `static/fonts/`, as the licence asks of anyone who passes
+the fonts on. A font added there brings its licence with it.
 
 The site follows the reader's system setting between light and dark; the switch in the
 masthead overrules it and is remembered in the browser. Both designs therefore have to
