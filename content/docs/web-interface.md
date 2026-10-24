@@ -136,6 +136,11 @@ filter that has matched nothing yet says so, and offers to clear it. A name in t
 the same question again on the Ask page, which is where an answer that looks wrong gets
 explained.
 
+Behind a resolver every query comes from the resolver. Where it is one the settings name and
+it says which client it is asking for, the *From* column shows that client with the resolver
+beside it, and the address filter finds it either way. [A resolver in
+front](/docs/resolver-in-front/#which-client-asked) has the setup on both sides.
+
 Under load the stream samples rather than slowing the query path down, and says so while it is
 doing it, with the ratio. A graph that quietly stops being the whole truth is worse than one
 that admits it.
@@ -231,8 +236,8 @@ voter to spare, says so on every page, in the rail where the version otherwise i
 
 ## Settings
 
-Three settings, server-wide, each in a panel of its own and grouped under what it belongs to:
-the reverse entries, and the zone transfer.
+Four settings, server-wide, each in a panel of its own and grouped under what it belongs to:
+the reverse entries, the zone transfer, and a resolver in front.
 
 {{< screenshot "settings" "The settings screen: the four reverse conflict policies, each with its API value and what it does, above the transfer and notify lists, each in a panel of its own." >}}
 
@@ -245,6 +250,10 @@ are visibly the same setting.
 lists. A transfer hands over every name and address at once, so the default is nobody. The
 second of them is also who gets asked what they hold, which is what the Secondaries screen
 above reports.
+
+**Whose word on a client is believed** names the resolvers in front whose client subnet
+option the query stream takes at its word. It starts at nobody, because the option holds
+whatever its sender wrote into it, and nothing about an answer depends on it.
 
 ## The keyboard
 

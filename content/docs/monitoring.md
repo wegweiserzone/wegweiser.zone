@@ -3,7 +3,7 @@ title = "Monitoring"
 description = "Whether it is fit to answer, what it has been answering, and the handful of numbers worth an alert."
 weight = 120
 group = "Running it"
-version = "0.6.0"
+version = "0.7.0"
 +++
 
 ## Is it alive

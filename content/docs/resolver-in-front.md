@@ -164,6 +164,58 @@ Wegweiser also tells you why it refused. Its answers carry extended DNS errors
 ; EDE: 20 (Not Authoritative): (no zone on this server covers that name)
 ```
 
+## Which client asked
+
+In this arrangement every query reaches Wegweiser from Unbound, so the query stream reads
+`127.0.0.1` on every row and cannot say which machine keeps asking for a name. Unbound can
+say it, in the client subnet option of RFC 7871, and Wegweiser shows the client it names
+when the resolver sending it is one Wegweiser has been told to believe.
+
+On Unbound's side, in the `server:` block above:
+
+```
+    module-config: "subnetcache validator iterator"
+    send-client-subnet: 127.0.0.1
+    max-client-subnet-ipv4: 32
+    max-client-subnet-ipv6: 128
+```
+
+`send-client-subnet` names where the option goes, and nobody else is sent it. The two
+`max-` lines send the whole address. Without them Unbound sends only the network around it,
+as RFC 7871 recommends for a resolver sharing a client's address with a stranger, and the
+stream then shows that network instead. Ubuntu's `unbound` package has the `subnetcache`
+module built in; elsewhere, `unbound -V` lists it among the linked modules if it is there.
+
+On Wegweiser's side:
+
+```console
+$ weg settings set --resolvers 127.0.0.1
+```
+
+or the panel under *A resolver in front* in the settings. The list starts empty on purpose:
+the option holds whatever its sender wrote into it, so it is believed only from where you
+said a resolver is. From then on the stream reads like this:
+
+```console
+$ weg query tail
+TIME          CLIENT                 TR   RCODE       LATENCY   SIZE  TYPE    NAME
+18:34:27.941  10.0.0.23              udp  NOERROR        75µs     97  A       nas.internal.example.  via 127.0.0.1:11871
+18:34:27.942  10.0.0.31              udp  NOERROR        41µs     97  A       pbx.internal.example.  via 127.0.0.1:11044
+```
+
+`weg query tail --client 10.0.0.23` and the address filter on the stream page find that
+client's queries as well as ones it sent directly.
+
+Two things follow from how it works. Wegweiser sends the option back saying its answer is
+the same for every client, which is true, and which is what keeps Unbound's cache shared:
+nothing about the answers changes, and Unbound does not ask again for each client. That
+also means the stream shows what Unbound passed down, not every client's question. A second
+machine asking for the same name within its TTL is answered from Unbound's cache and never
+reaches Wegweiser.
+
+The block above was run against Unbound 1.24.2 with Wegweiser behind it, and the stream
+lines are from that run, with the addresses of its two clients changed to this network's.
+
 ## Variants
 
 **Separate machines.** Nothing changes except the address. Point `stub-addr`

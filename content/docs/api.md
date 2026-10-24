@@ -329,6 +329,11 @@ data: {"at":"2026-09-01T16:41:06.655307929+02:00","client":"127.0.0.1","port":49
 
 Each `data:` is one line on the wire; they are wrapped above to fit the page.
 
+A query that came from a resolver on the `resolvers` list in the settings, and carried the
+client subnet option of RFC 7871, has `for` beside `client`: the client the resolver asked
+for, as an address, or as a network where the resolver cut it down. `client` stays the
+resolver. [A resolver in front](/docs/resolver-in-front/#which-client-asked) has the setup.
+
 Four filters, all applied on the server so that watching one name stays complete however busy
 the rest of the server is:
 
@@ -337,7 +342,7 @@ the rest of the server is:
 | `name` | That name and everything below it. `example.com.` is the whole zone |
 | `type` | Repeatable. `?type=A&type=AAAA` |
 | `rcode` | Repeatable. `?rcode=NXDOMAIN&rcode=SERVFAIL` |
-| `client` | One address, or a network in CIDR form |
+| `client` | One address, or a network in CIDR form, matched against `for` as well |
 
 `name` is a suffix match, so `example.com.` catches `www.example.com.` and does not catch the
 reverse zone's `PTR` traffic, even though the same record write produced both.
@@ -522,7 +527,7 @@ Forty-one operations. The spec is the authority; this is the map.
 | | |
 | --- | --- |
 | `GET /commits` · `GET /commits/{id}` | The history, and one change with its records. `?name=` is the history of one name |
-| `GET PATCH /settings` | Reverse policy, who may transfer, who is notified |
+| `GET PATCH /settings` | Reverse policy, who may transfer, who is notified, which resolvers are believed about a client |
 | `GET POST /tokens` · `DELETE /tokens/{id}` | Credentials. `admin` |
 | `GET POST /tsig-keys` · `DELETE` · `GET .../secret` | Transfer keys. `admin` |
 | `GET /secondary-config` | The configuration a secondary needs. `admin` |

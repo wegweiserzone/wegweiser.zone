@@ -79,18 +79,18 @@ leads nowhere is usually explained here: the listing for the name it pointed at 
 went.
 
 A reverse entry is a name of its own, `99.2.0.192.in-addr.arpa.` rather than `www`, and the
-server wrote every commit it has. Listing one therefore needs `--all`, or it finds nothing:
+server wrote every commit it has. A name's history is therefore shown whole, what followed
+included, without `--all`, because for a reverse entry that is all there is:
 
 ```console
-$ weg history list --name 99.2.0.192.in-addr.arpa --all
+$ weg history list --name 99.2.0.192.in-addr.arpa
 WHEN                 ZONE                   SERIAL  KIND  WHO        COMMENT
 2026-08-30 00:44:49  2.0.192.in-addr.arpa.  2→3     edit  bootstrap  reverse entries kept in step with example.com.
 ```
 
 In the interface the clock on a record's row opens the history narrowed to its name, and so
-does the link under an answer on the [Ask page](/docs/ask/). There it shows everything at
-once, what followed included, since for a reverse entry that is all there is. The API's
-`GET /commits` takes the same `?name=`.
+does the link under an answer on the [Ask page](/docs/ask/), and it is shown whole there too.
+The API's `GET /commits` takes the same `?name=`.
 
 ## What changed
 

@@ -3,7 +3,7 @@ title = "A cluster"
 description = "A few servers holding the same zones, kept in step through one log. How many to run, how one starts and the others join, what happens when one goes away, and how a member leaves."
 weight = 101
 group = "Running it"
-version = "0.6.0"
+version = "0.7.0"
 +++
 
 A cluster is a few Wegweiser servers that hold the same zones and keep them in step through
