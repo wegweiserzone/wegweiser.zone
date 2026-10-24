@@ -120,6 +120,20 @@ www.example.com.
 
 Both directions, and only one of them was typed.
 
+Without `dig`, or from a machine that cannot reach the DNS port, the server says the same
+thing over its API:
+
+```console
+$ weg ask 10.2.0.192.in-addr.arpa PTR
+NOERROR from 2.0.192.in-addr.arpa.: 1 record
+
+answer
+10.2.0.192.in-addr.arpa.  3600  IN  PTR  www.example.com.
+```
+
+[Asking what it answers](/docs/ask/) is the rest of that, including what the first line means
+when the answer is not the one you expected.
+
 ## What to read next
 
 - [Zones and records](/docs/zones-and-records/) is the daily work.

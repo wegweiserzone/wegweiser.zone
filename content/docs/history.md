@@ -61,6 +61,37 @@ A change and the reverse entries it causes carry one timestamp rather than sever
 of a millisecond apart. One command was accepted at one moment, so nothing in the ordering of
 those commits means anything it was not meant to.
 
+## One name
+
+The history of a zone answers "what happened here". The question that comes up while
+something is broken is narrower: what happened to `www`.
+
+```console
+$ weg history list --name www.example.com
+WHEN                 ZONE          SERIAL  KIND  WHO        COMMENT
+2026-08-30 00:44:49  example.com.  2→3     edit  bootstrap  change www A 192.0.2.10 → 192.0.2.99
+2026-08-30 00:44:24  example.com.  1→2     edit  bootstrap  add www A 192.0.2.10
+```
+
+That is every commit that added or removed a record owned by the name, in whichever zone it
+was made, and it outlives the record as the zone history outlives the zone. A `CNAME` that
+leads nowhere is usually explained here: the listing for the name it pointed at says when that
+went.
+
+A reverse entry is a name of its own, `99.2.0.192.in-addr.arpa.` rather than `www`, and the
+server wrote every commit it has. Listing one therefore needs `--all`, or it finds nothing:
+
+```console
+$ weg history list --name 99.2.0.192.in-addr.arpa --all
+WHEN                 ZONE                   SERIAL  KIND  WHO        COMMENT
+2026-08-30 00:44:49  2.0.192.in-addr.arpa.  2→3     edit  bootstrap  reverse entries kept in step with example.com.
+```
+
+In the interface the clock on a record's row opens the history narrowed to its name, and so
+does the link under an answer on the [Ask page](/docs/ask/). There it shows everything at
+once, what followed included, since for a reverse entry that is all there is. The API's
+`GET /commits` takes the same `?name=`.
+
 ## What changed
 
 ```console

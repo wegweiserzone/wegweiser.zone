@@ -47,7 +47,8 @@ enabled example.com., serial 7 → 8
 
 A disabled zone stays in the database with all its records and stops being answered for
 entirely: it is not in the snapshot, so queries for it are REFUSED and a transfer of it is
-refused too. It is the reversible half of `delete`.
+refused too. [`weg ask`](/docs/ask/) says the same, since it asks the snapshot the query path
+serves. It is the reversible half of `delete`.
 
 ## Records
 
@@ -148,3 +149,4 @@ unknown type round-trips unchanged as RFC 3597 requires.
 - [Reverse zones](/docs/reverse-zones/): the PTR half, which is written for you.
 - [History and rollback](/docs/history/): every one of the commands above is a commit.
 - [Checking a zone](/docs/checking/): what is wrong that the write path allowed.
+- [Asking what it answers](/docs/ask/): what the server says for a name, and why.

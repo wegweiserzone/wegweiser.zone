@@ -453,10 +453,11 @@ Zones, records and commits page, and each takes filters of its own:
 | --- | --- |
 | `/zones` | `name`, `kind`, `disabled`, `search` |
 | `/zones/{id}/records` | `name`, `type`, `search` |
-| `/commits` | `zoneId`, `kind`, `source`, `actor`, `since`, `until` |
+| `/commits` | `zoneId`, `kind`, `source`, `actor`, `name`, `since`, `until` |
 
 `since` and `until` on the history are what an audit export is built from, and `actor`
-narrows it to one token.
+narrows it to one token. `name` keeps the commits that added or removed a record owned by
+that name, in whichever zone.
 
 Tokens and TSIG keys return a bare array with no cursor, since a server with enough of either
 to need a second page has a different problem.
@@ -493,13 +494,13 @@ status code.
 
 ## Everything there is
 
-Forty operations. The spec is the authority; this is the map.
+Forty-one operations. The spec is the authority; this is the map.
 
 **Zones**
 
 | | |
 | --- | --- |
-| `GET POST /zones` | List and create. `?name=` finds one by name |
+| `GET POST /zones` | List and create. `?name=` finds one by name, and each zone listed carries `records`, how many it answers from |
 | `GET PATCH DELETE /zones/{id}` | One zone, its settings, and removing it with everything in it |
 | `POST /zones/import` · `GET /zones/{id}/export` | Zonefiles in and out |
 | `GET /zones/{id}/check` | What is wrong with it; `?reverse=true` adds the reverse half |
@@ -520,7 +521,7 @@ Forty operations. The spec is the authority; this is the map.
 
 | | |
 | --- | --- |
-| `GET /commits` · `GET /commits/{id}` | The history, and one change with its records |
+| `GET /commits` · `GET /commits/{id}` | The history, and one change with its records. `?name=` is the history of one name |
 | `GET PATCH /settings` | Reverse policy, who may transfer, who is notified |
 | `GET POST /tokens` · `DELETE /tokens/{id}` | Credentials. `admin` |
 | `GET POST /tsig-keys` · `DELETE` · `GET .../secret` | Transfer keys. `admin` |
@@ -539,6 +540,7 @@ Forty operations. The spec is the authority; this is the map.
 
 | | |
 | --- | --- |
+| `GET /ask` | What the server answers for a name and a type, and what kind of answer it is. [Asking what it answers](/docs/ask/#over-the-api) |
 | `GET /queries/stream` | Server-sent events, one per query answered |
 | `GET /healthz` · `GET /metrics` | Health, and Prometheus metrics |
 | `POST GET DELETE /auth/session` | The browser's way in |

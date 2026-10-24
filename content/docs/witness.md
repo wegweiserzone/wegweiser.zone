@@ -3,6 +3,7 @@ title = "A witness"
 description = "The third vote for two servers: a small program that keeps the cluster's log, answers nothing, and hands leadership to a server whenever it wins an election."
 weight = 102
 group = "Running it"
+version = "0.6.0"
 +++
 
 Two DNS servers make no honest [cluster](/docs/cluster/). A majority of two is two, so

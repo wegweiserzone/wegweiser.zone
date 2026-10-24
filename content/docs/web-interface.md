@@ -51,9 +51,11 @@ because everything else on it comes from somewhere else.
 
 ## Zones and records
 
-Zones lists what this server holds with kind, serial, default TTL, primary name server, state
-and when it last changed, narrowing as you type. The name server is written as a zonefile
-would write it, `ns1` rather than the zone name a second time. Creating one takes a name, and
+Zones lists what this server holds with kind, how many records each answers from, serial,
+default TTL, primary name server, how many of its copies on secondaries are in step, and when
+it last changed, narrowing as you type. The name server is written as a zonefile would write
+it, `ns1` rather than the zone name a second time. A disabled zone says so beside its name,
+and the copies say under the pointer which secondary stands where. Creating one takes a name, and
 a network is accepted wherever a name is: `192.0.2.0/24` becomes the reverse zone that answers
 for that range, without anyone reversing the octets by hand.
 
@@ -62,14 +64,19 @@ so that a disabled one stands out, and the same goes for tokens, keys, cluster m
 secondaries and the response codes in the query stream. A listing that fits on one page has
 no pager under it.
 
-Opening a zone gives one line of facts (kind, serial, default TTL, when it changed) and its
-records in a dense table with the search across the top, and four tabs: **Records**,
-**Check**, **Settings** and **History**. History lands in the server-wide history already
-narrowed to this zone. Export sits beside them and writes the zone out as a zonefile.
+Opening a zone gives one line of facts and its records in a dense table with the search across
+the top, and four tabs: **Records**, **Check**, **Settings** and **History**. The facts are
+its kind, how many records it answers from, serial, default TTL, where its copies on
+secondaries stand, and its last change: when, by whom and what, which is the first thing asked
+about a zone that behaves differently from yesterday. History lands in the server-wide history
+already narrowed to this zone. Export sits beside the tabs and writes the zone out as a
+zonefile.
 
 A record the server generated and maintains says `generated` beside its data, and the zone's
 own name servers say `zone`. Editing a generated one tells you what you are about to take
-over.
+over. Every row also has a way to [ask what the server answers](/docs/ask/) for that record,
+and a clock that opens [the history of its name](/docs/history/#one-name). Both are reads, so
+a session that may only read has them too.
 
 ### The record editor
 
@@ -125,11 +132,22 @@ latency, above a per-second line and a latency histogram. Truncated answers are 
 
 Filter by a name and everything below it, or by one address or network. Both are applied on
 the server, so watching one zone stays complete however busy the rest of the server gets. A
-filter that has matched nothing yet says so, and offers to clear it.
+filter that has matched nothing yet says so, and offers to clear it. A name in the table asks
+the same question again on the Ask page, which is where an answer that looks wrong gets
+explained.
 
 Under load the stream samples rather than slowing the query path down, and says so while it is
 doing it, with the ratio. A graph that quietly stops being the whole truth is worse than one
 that admits it.
+
+## Ask
+
+What the server answers for a name and a type, decided by the function that answers queries,
+so nobody needs `dig` or a route to the DNS port. It leads with the kind of answer (an answer,
+an alias, no data, no such name, a referral), then the response code, the zone and the records
+section by section. Every name in an answer asks about itself, so an alias or a delegation can
+be followed by clicking, and the question stays in the address to be sent on.
+[Asking what it answers](/docs/ask/) has the kinds and what each means.
 
 ## History
 
@@ -146,6 +164,10 @@ reverse zone, and that arrives as its own commit, in its own zone, with the comm
 gave it — true history, and not something anybody did. **Everything** brings those back, set
 below the change they came from and marked *Followed* rather than by kind, because the kind of
 such a commit is always an edit and what it is, is the consequence of another one.
+
+Narrowed to one name, from the clock on a record's row or from an answer on the Ask page, it
+shows everything that happened to that name, the entries the server wrote by itself included,
+and the name sits in the bar with a way to clear it.
 
 A rollback is a new commit too, which is why the serial moves forward when you revert.
 [History and rollback](/docs/history/) has the rest.
@@ -227,7 +249,7 @@ above reports.
 `Ctrl+K` opens the command palette: anywhere in the interface, any zone by name, the theme,
 and signing out. It starts things too: a new zone, record, token or key, an import, and the
 check or the history of the zone on the screen, which come first. Each opens the same dialog
-the page's own button does.
+the page's own button does. A name typed into it can be asked about at once.
 
 {{< screenshot "palette" "The command palette, listing every place with its shortcut, what can be started from it, and every zone by name." >}}
 
@@ -235,7 +257,7 @@ Without it:
 
 | | |
 | --- | --- |
-| `g` then `o` `z` `s` `h` `2` `c` `t` `k` `,` | Overview, Zones, Query stream, History, Secondaries, Cluster, Tokens, Keys, Settings |
+| `g` then `o` `z` `s` `a` `h` `2` `c` `t` `k` `,` | Overview, Zones, Query stream, Ask, History, Secondaries, Cluster, Tokens, Keys, Settings |
 | `/` | Focus whatever the current screen filters by |
 | `↑` `↓` `↵` `Esc` | Move, open, close, in the palette and in tables |
 

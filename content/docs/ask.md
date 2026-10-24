@@ -100,7 +100,7 @@ example.com.  3600  IN  SOA  ns1.example.com. hostmaster.example.com. 9 3600 900
 ```
 
 That is usually a record left behind when the one it pointed at was deleted, and the
-[history](/docs/history/) says when that happened.
+[history of that name](/docs/history/#one-name), `gone.example.com` here, says when.
 
 ### Refused, not missing
 

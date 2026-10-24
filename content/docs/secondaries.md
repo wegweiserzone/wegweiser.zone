@@ -343,6 +343,11 @@ differently.
 Nothing here is red, in the interface or on the terminal. A zone that has not
 arrived yet is something to look at rather than a failure of this server.
 
+The same answers are counted where zones are looked at anyway. The zone list in the
+interface has a column of copies in step, such as `1/2 in step`, and a zone's own page
+carries the count among its facts. Both lead here, and the column says under the pointer
+which secondary stands where.
+
 ### How the asking works
 
 A probe is a `SOA` query, unsigned, over UDP, to the address on the notify
