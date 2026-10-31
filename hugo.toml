@@ -45,6 +45,9 @@ summaryLength = 30
   [[params.releases]]
     version = "0.7.0"
     date = "2026-10-24"
+  [[params.releases]]
+    version = "0.8.0"
+    date = "2026-10-31"
 
 # SITE_COMMIT comes from the deploy. Hugo's defaults are repeated because
 # this replaces the list rather than extending it.
