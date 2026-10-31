@@ -2,7 +2,7 @@
 title = "Wegweiser"
 +++
 
-{{< screenshot "records" "The records of a reverse zone: PTR entries the server wrote by itself, each marked generated and naming the address record it came from, in a dense table of name, type, TTL and data." >}}
+{{< screenshot "records" "The records of a reverse zone: PTR entries the server wrote by itself, each marked generated and naming the address record it came from, in a dense table of name, type, TTL and data, each row ending in what can be done to it." >}}
 
 ## What it is
 

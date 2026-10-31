@@ -16,12 +16,17 @@ and why the default is what it is.
 
 ## Signing in
 
-Paste a token once. The server sets an httpOnly session cookie, and afterwards nothing a
-script can read holds the credential. That is the reason it is a cookie and not browser
-storage.
+The sign-in page puts the [identity providers](/docs/sign-in/) first, each saying what it
+will ask for: a button for an OpenID Connect provider, a name and password for a directory.
+The API token is folded away below them, and is the way in until a provider is added. Beside
+them the page says which server this is and how it stands. When a provider refuses somebody,
+the page says why.
 
-The first token is the one `weg serve` prints on first start. After that, mint one per person
-from Tokens, with the scope that person needs.
+Either way the server sets an httpOnly session cookie, and afterwards nothing a script can
+read holds the credential. That is the reason it is a cookie and not browser storage.
+
+The first token is the one `weg serve` prints on first start. People then sign in through a
+provider, and Tokens mints one for whatever is not a person.
 
 A session that may only read still sees everything. The controls it cannot use say so, with
 *Read only* or *This session may not manage tokens*, rather than quietly disappearing. An
@@ -62,7 +67,8 @@ for that range, without anyone reversing the octets by hand.
 Colour is kept for what is not as it should be. A zone that serves is not green on every row,
 so that a disabled one stands out, and the same goes for tokens, keys, cluster members,
 secondaries and the response codes in the query stream. A listing that fits on one page has
-no pager under it.
+no pager under it. What can be done to a zone, a record, a token or a key sits in its row,
+where it can be seen without the pointer over it.
 
 Opening a zone gives one line of facts and its records in a dense table with the search across
 the top, and four tabs: **Records**, **Check**, **Settings** and **History**. The facts are
@@ -191,6 +197,25 @@ signed in with.
 
 A TSIG secret can be read back, because the other end of the transfer has to be given it.
 
+## Providers
+
+The identity providers people sign in through, a row each with what each scope is given and
+whether the sign-in page offers it, and Edit and Remove in the row. [Signing in through a
+provider](/docs/sign-in/) has the whole of it; this is the screen. It needs `admin`.
+
+A provider's page has its connection first: the issuer and the client, or the directory's
+address, the account it searches as and where people and their groups are. A secret is typed
+in and never shown again, and the redirect URI for the address the page is served from is
+offered with one click. Below that comes who it lets in, as the groups given admin, write and
+read, and a provider that lets nobody in says so.
+
+Beside the form, **Check it** tries the provider as the fields stand, saved or not, and says
+when they have changed since. Looking somebody up in a directory lists their groups, and
+**Try signing in** does the same for an OpenID Connect provider by signing in once without
+a session, switched on or not. A click beside a group gives it a scope, which saving keeps.
+At the foot of the page, every session one person holds through the provider can be ended by
+their name.
+
 ## Secondaries
 
 Every zone on every address the notify list names, with the state each one is in, the serial
@@ -236,10 +261,12 @@ voter to spare, says so on every page, in the rail where the version otherwise i
 
 ## Settings
 
-Four settings, server-wide, each in a panel of its own and grouped under what it belongs to:
-the reverse entries, the zone transfer, and a resolver in front.
+Four settings, server-wide, a row each: what the setting is and why on the left, its control
+on the right. They are grouped under what they belong to, the reverse entries, the zone
+transfer and a resolver in front, and the groups are listed beside them, so a click jumps to
+one.
 
-{{< screenshot "settings" "The settings screen: the four reverse conflict policies, each with its API value and what it does, above the transfer and notify lists, each in a panel of its own." >}}
+{{< screenshot "settings" "The settings screen: its sections listed on the left, and beside them a row per setting, what it is and why on one side and its control on the other, starting with the four reverse conflict policies, each with its API value and what it does." >}}
 
 **When an address already answers** is the reverse conflict policy, and the four choices are
 spelled out with what each one costs: keep the first, take it over, keep both, or refuse the

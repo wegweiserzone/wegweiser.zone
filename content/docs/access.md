@@ -1,8 +1,9 @@
 +++
 title = "Access"
-description = "Tokens, what each scope may do, and how a browser signs in without ever holding one. Everything that reaches this server comes through the same door."
+description = "Tokens, what each scope may do, and how a browser signs in without a script ever reaching the credential. Everything that reaches this server comes through the same door."
 weight = 90
 group = "Running it"
+version = "0.8.0"
 +++
 
 There is one API. The web interface and `weg` are both clients of it, and so is anything you
@@ -49,14 +50,15 @@ does.
 | --- | --- |
 | `read` | Look at zones, records, history, metrics, the query stream |
 | `write` | All of that, and change zones and records |
-| `admin` | All of that, and manage tokens and transfer keys |
+| `admin` | All of that, and manage tokens, transfer keys and identity providers |
 
 The scope a request needs is decided by its method — a `GET` needs `read`, anything else
 needs `write` — with one exception in each direction.
 
-**Tokens and transfer keys need `admin` whatever the method is.** A `write` token that could
-mint an `admin` token would not be a `write` token, and a key that may transfer may take
-every zone on the server. Reading a key's secret is a `GET` and still needs `admin`. So do
+**Tokens, transfer keys and identity providers need `admin` whatever the method is.** A
+`write` token that could mint an `admin` token would not be a `write` token, a key that may
+transfer may take every zone on the server, and a provider's mappings decide who becomes an
+administrator. Reading a key's secret is a `GET` and still needs `admin`. So do
 starting a [cluster](/docs/cluster/) and taking a member out of one, since either changes
 which machines hold every zone.
 
@@ -66,8 +68,9 @@ cannot stop being logged in.
 
 ## How the browser signs in
 
-The interface holds no token. You paste one once, the server sets an httpOnly session
-cookie, and the token is gone from anywhere a script can reach. That is the whole reason it
+The interface holds no token. A person signs in through an [identity
+provider](/docs/sign-in/) or pastes a token once, the server sets an httpOnly session
+cookie, and the credential is gone from anywhere a script can reach. That is the whole reason it
 is a cookie and not `localStorage`: a script injected into the page cannot read an httpOnly
 cookie, and could read anything the page stored itself.
 
@@ -75,6 +78,10 @@ A second cookie carries a CSRF value that the page *can* read, because it has to
 back in a header on every state-changing request. Those are the two halves of the
 double-submit pattern: the credential the page cannot see, and the proof it is the page
 making the request.
+
+A sign-in itself is the one write that comes without a credential, so it carries no CSRF
+value either. It has to say it is `application/json`, which a form on another site cannot
+send without the browser asking first, and nothing here answers that question.
 
 ## Reaching it from a network
 

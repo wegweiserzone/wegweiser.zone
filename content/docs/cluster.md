@@ -3,7 +3,7 @@ title = "A cluster"
 description = "A few servers holding the same zones, kept in step through one log. How many to run, how one starts and the others join, what happens when one goes away, and how a member leaves."
 weight = 101
 group = "Running it"
-version = "0.7.0"
+version = "0.8.0"
 +++
 
 A cluster is a few Wegweiser servers that hold the same zones and keep them in step through
@@ -36,14 +36,18 @@ one more acknowledgement for every write. The reasoning is in
 
 ## What it replicates
 
-Zones, records, history, tokens, TSIG keys and the server-wide settings, including the secret
-DNS cookies are computed under. A token minted on one member works on every member.
+Zones, records, history, tokens, TSIG keys, the [identity providers](/docs/sign-in/) and the
+server-wide settings, including the secret DNS cookies are computed under and the key
+sessions are sealed under. A token minted on one member works on every member, and so does
+a session opened on one: signing in to the web interface holds across a failover and a
+restart.
 
-Three things stay on the server they belong to: browser sessions, so signing in to the web
-interface is per server and a failover asks for the token again; when a token was last used;
-and how far the server has got through the log. Sessions stay local on purpose: replicated,
-a login would need the cluster to agree on it, and would fail exactly when the cluster has
-lost its majority.
+Signing in itself is not replicated. The session is a cookie sealed under that shared key
+rather than a record on any server, so opening one needs no agreement and works while the
+cluster has lost its majority. Ending one early is a write, and needs the majority back.
+
+Two things stay on the server they belong to: when a token was last used, and how far the
+server has got through the log.
 
 ## Configuration
 
@@ -177,6 +181,11 @@ are back for one of them to be elected. **Every member goes on answering queries
 the data it holds. A DNS server that stops answering because its control plane lost a vote
 would be the wrong failure: one that stops accepting edits for a while is inconvenient, one
 that stops resolving names is an outage.
+
+A leader that is stopped on purpose hands leadership to another voter first, so writes are
+taken again at once rather than refused until the others notice it has gone. It passes over
+a [witness](/docs/witness/), which would only hand leadership on again, and tries the next
+voter when the first does not take it.
 
 A member that is merely off stays a member and keeps being counted. Nothing removes members
 for being quiet, because nothing on the network can tell a machine that is off from one that

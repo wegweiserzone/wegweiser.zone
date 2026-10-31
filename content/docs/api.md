@@ -28,14 +28,17 @@ $ curl -H "Authorization: Bearer $WEG_TOKEN" http://127.0.0.1:8053/api/v1/zones
 ```
 
 The scope a request needs comes from its method. `GET` needs `read`, anything that changes
-something needs `write`. Tokens, TSIG keys, the secondary's configuration, starting a
-cluster and taking a member out of one are the exception and need `admin` whatever the
-method: a `write` token able to mint an `admin` token would not be a `write` token, and a key
+something needs `write`. Tokens, TSIG keys, identity providers, the secondary's configuration,
+starting a cluster and taking a member out of one are the exception and need `admin`
+whatever the method: a `write` token able to mint an `admin` token would not be a `write` token, and a key
 that may transfer may take every zone. Scopes are ordered, so `admin` satisfies a requirement
 for `read`.
 
-Two endpoints need no credential. `GET /healthz`, because a load balancer has nowhere to put
-one, and `POST /auth/session`, because handing over a token is what it is for.
+A few endpoints need no credential. `GET /healthz`, because a load balancer has nowhere to
+put one, and the ways in, because a credential is what they hand over: `POST /auth/session`
+for a token, `POST /auth/ldap/{id}` for a directory, the `/auth/oidc/` routes a browser is
+sent through for an OpenID Connect provider, and `GET /auth/providers`, which tells the
+sign-in page which providers there are.
 
 ```json
 {"records":6,"status":"serving","version":"v0.5.0","zones":2}
@@ -50,8 +53,10 @@ A read is answered by the member asked. [A cluster](/docs/cluster/) has the rest
 ### From a browser
 
 A page cannot hold a bearer token safely, so it does not. `POST /auth/session` takes the
-token once and sets an httpOnly cookie; nothing a script can read holds the credential
-afterwards. A second cookie, `weg_csrf`, is readable, and its value goes back in the
+token once and sets an httpOnly cookie, as a sign-in through a [provider](/docs/sign-in/)
+does; nothing a script can read holds the credential afterwards. A sign-in has to be sent as
+`application/json` and is answered 415 otherwise, because a form on another site could post
+one as text/plain and sign a visitor in as whoever wrote it. A second cookie, `weg_csrf`, is readable, and its value goes back in the
 `X-Wegweiser-CSRF` header on anything that changes state. A write without it is refused with
 403, whatever the cookie says.
 
@@ -499,7 +504,7 @@ status code.
 
 ## Everything there is
 
-Forty-one operations. The spec is the authority; this is the map.
+Fifty-three operations. The spec is the authority; this is the map.
 
 **Zones**
 
@@ -533,6 +538,16 @@ Forty-one operations. The spec is the authority; this is the map.
 | `GET /secondary-config` | The configuration a secondary needs. `admin` |
 | `GET /secondary-status` | Where each secondary stands on each zone |
 
+**Identity providers**
+
+| | |
+| --- | --- |
+| `GET POST /identity-providers` | The OpenID Connect providers and directories people sign in through, and the groups each gives a scope. `admin` |
+| `GET PUT DELETE /identity-providers/{id}` | One provider. A secret left out of a change is kept while the issuer and client ID, or the URL and bind DN, stay the same. `admin` |
+| `POST /identity-providers/check` | Try what a sign-in needs, for a saved provider or a draft, and look somebody up in a directory. `admin` |
+| `POST /identity-providers/{id}/try-sign-in` | The address of a sign-in that opens no session, whose outcome the check above reads back. `admin` |
+| `POST /identity-providers/{id}/end-sessions` | End every session one person holds through the provider. `admin` |
+
 **Cluster**
 
 | | |
@@ -548,7 +563,10 @@ Forty-one operations. The spec is the authority; this is the map.
 | `GET /ask` | What the server answers for a name and a type, and what kind of answer it is. [Asking what it answers](/docs/ask/#over-the-api) |
 | `GET /queries/stream` | Server-sent events, one per query answered |
 | `GET /healthz` · `GET /metrics` | Health, and Prometheus metrics |
-| `POST GET DELETE /auth/session` | The browser's way in |
+| `POST GET DELETE /auth/session` | The browser's way in with a token, who it is signed in as, and signing out |
+| `GET /auth/providers` | Which providers the sign-in page offers |
+| `POST /auth/ldap/{id}` | Sign in through a directory |
+| `GET /auth/oidc/{id}/start` · `GET /auth/oidc/callback` | A sign-in through an OpenID Connect provider, there and back. `weg login` starts it with `loopback` and `key` |
 
 A minted token and a created key are the only places a secret appears:
 

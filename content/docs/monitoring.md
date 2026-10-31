@@ -3,7 +3,7 @@ title = "Monitoring"
 description = "Whether it is fit to answer, what it has been answering, and the handful of numbers worth an alert."
 weight = 120
 group = "Running it"
-version = "0.7.0"
+version = "0.8.0"
 +++
 
 ## Is it alive
@@ -86,6 +86,7 @@ weg_snapshot_zones
 weg_snapshot_records
 weg_snapshot_published_timestamp_seconds
 weg_cluster_behind
+weg_process_start_timestamp_seconds
 weg_build_info
 ```
 
@@ -122,6 +123,10 @@ normal over UDP, a lot of it means clients are being pushed to TCP more than the
 So is `weg_dns_under_load`, beside `weg_dns_cookie_refusals_total`: they say when the server
 could not keep up and whom that turned away, and [under load](/docs/under-load/) says what
 the two labels of the counter mean.
+
+`weg_process_start_timestamp_seconds` is when the server started. The process collector
+works its own start time out from the boot time, which the shipped systemd unit hides, and
+this one is there under it too.
 
 ## What is not measured
 

@@ -53,6 +53,10 @@ Then open <http://127.0.0.1:8053> and paste the same token into the sign-in fiel
 working on the command line. Both reach the same server through the same API; nothing is
 available in only one of them.
 
+The token is for setting up, and for programs later. The people who use the server sign in
+with the accounts they already have, once a provider is added: [signing in through a
+provider](/docs/sign-in/) shows how.
+
 ## Port 53 without root
 
 Port 53 is privileged, and this server never wants to be root. On a host, the systemd unit
