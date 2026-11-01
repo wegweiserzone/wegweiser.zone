@@ -3,7 +3,7 @@ title = "A cluster"
 description = "A few servers holding the same zones, kept in step through one log. How many to run, how one starts and the others join, what happens when one goes away, and how a member leaves."
 weight = 101
 group = "Running it"
-version = "0.8.0"
+version = "0.9.0"
 +++
 
 A cluster is a few Wegweiser servers that hold the same zones and keep them in step through
@@ -74,7 +74,9 @@ interface, which is not one anybody can dial.
 **`secret`** is the cluster's shared secret, base64, at least 256 bits, the same on every
 member. `openssl rand -base64 32` makes one. Members talk over TLS 1.3 and prove the secret
 inside the session, so holding it is what makes a machine a member, and whoever holds it can
-speak as any of them. The file wants to be readable by the server alone.
+speak as any of them. Keep the file at mode 0600 and owned by root; the systemd unit hands it
+to the server as a credential, so the server can read it anyway
+([Running Wegweiser](/docs/deployment/#what-the-unit-does-about-privilege)).
 
 The section is read from the file only, never from the environment. `weg config show` lists
 it, and says that a secret is set and how long it is rather than what it is. Raft keeps its
@@ -248,9 +250,52 @@ Repair it like a member that was taken out: remove it from another member, disca
 database and its Raft directory, and join it again. It starts from a snapshot of the whole
 cluster, however long the log has grown.
 
-The same rule is why an upgrade goes one member at a time. A member running an older version
-that meets an entry it cannot read stops rather than guess, and `weg cluster status` is how
-you see that before the next member goes.
+The same rule is why an upgrade goes one member at a time, [as below](#upgrading).
+
+## Upgrading
+
+One member at a time, and never all of them because a timer said so. A member running an older
+version that meets an entry it cannot read stops rather than guess, so the order matters, and
+`weg cluster status` between two members shows whether the last one came back.
+
+Installed from [packages](/docs/deployment/#packages), hold them, so that an unattended
+upgrade does not reach every member in the same hour:
+
+```sh
+sudo apt-mark hold wegweiser          # Debian and Ubuntu
+sudo dnf versionlock add wegweiser    # Fedora
+sudo zypper addlock wegweiser         # openSUSE
+```
+
+RHEL 9 and its rebuilds need the plugin first: `sudo dnf install 'dnf-command(versionlock)'`.
+On a [witness](/docs/witness/) the package is `wegwitness`, and it is held the same way: a
+witness restarted by an unattended upgrade while a member is down for its own leaves the
+cluster one voter short.
+
+Then member by member, the leader last:
+
+1. Read the release's notes. When they say the release changes the database, stop the member
+   and copy its database and its Raft directory before going on
+   ([the database file](/docs/deployment/#the-database-file)).
+2. Release the hold, upgrade, hold again:
+   `sudo apt-mark unhold wegweiser && sudo apt install wegweiser && sudo apt-mark hold wegweiser`.
+   With dnf it is `versionlock delete`, `upgrade` and `versionlock add`; with zypper,
+   `removelock`, `update` and `addlock`.
+3. Wait until `weg cluster status` shows every member current before the next one.
+
+The leader goes last because it writes every entry the others apply. Until it is upgraded,
+each entry is written in the older release's format, and a release that changes the format
+still reads the one before, so the members already upgraded keep up. An election in
+between can hand the lead to a member that has already been upgraded. If an older member then
+stops over an entry, `weg cluster status` names it; upgrade it, and repair it as
+[above](#a-member-that-cannot-apply-a-change).
+
+A [witness](/docs/witness/) reads none of the log, so its version does not matter to the
+others. It is still a voter: upgrade it like one, not while another voter is down.
+
+A member that joins later gets the version the others run, which the repository keeps for
+every release: `sudo apt install wegweiser=<version>`, `sudo dnf install wegweiser-<version>`
+or `sudo zypper install wegweiser=<version>`.
 
 ## Watching it
 

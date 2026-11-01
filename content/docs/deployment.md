@@ -1,23 +1,149 @@
 +++
 title = "Running Wegweiser"
-description = "Two shapes that work: a systemd unit on a host, or a container. Both keep the database in one place and neither runs as root."
+description = "Three shapes that work: packages from the project's repository, a systemd unit installed by hand, or a container. All keep the database in one place and none runs as root."
 weight = 70
 group = "Running it"
 +++
 
-Two supported shapes: a systemd unit on a host, and a container image. Both put
-the database in `/var/lib/wegweiser` and read `/etc/wegweiser/config.yaml`, and
-neither runs as root.
+Three supported shapes: packages for apt, dnf and zypper, a systemd unit
+installed by hand, and a container image. All of them put the database in
+`/var/lib/wegweiser` and read `/etc/wegweiser/config.yaml`, and none runs as
+root.
 
-## systemd
+## Packages
+
+Wegweiser and its [witness](/docs/witness/) come as deb and rpm packages from
+the project's own repository at `pkg.wegweiser.zone`, for amd64 and arm64. The
+binary is static, so one package fits Debian 12, Ubuntu 22.04, RHEL 9 and its
+rebuilds, current Fedora, openSUSE Leap 15.6, and whatever came after them.
+
+The repository is signed with this key:
+
+```
+1B12 102F 15DD 28E0 A9D0  10C1 BC11 6760 1CAC C922
+```
+
+Compare it with what you are shown for the key you downloaded. The same
+fingerprint is in the [server's README](https://github.com/wegweiserzone/wegweiser#readme),
+so it can be checked somewhere other than this page.
+
+On Debian and Ubuntu:
+
+```sh
+sudo install -d -m 0755 /etc/apt/keyrings
+sudo curl -fsSLo /etc/apt/keyrings/wegweiser.asc https://pkg.wegweiser.zone/signing-key.asc
+gpg --show-keys /etc/apt/keyrings/wegweiser.asc
+sudo curl -fsSLo /etc/apt/sources.list.d/wegweiser.sources https://pkg.wegweiser.zone/wegweiser.sources
+sudo apt update
+sudo apt install wegweiser
+```
+
+The sources file names the key with `Signed-By`, so the key vouches for this
+repository and for no other.
+
+On RHEL, Rocky Linux, AlmaLinux and Fedora:
+
+```sh
+sudo curl -fsSLo /etc/yum.repos.d/wegweiser.repo https://pkg.wegweiser.zone/wegweiser.repo
+sudo dnf install wegweiser
+```
+
+On openSUSE:
+
+```sh
+sudo curl -fsSLo /etc/zypp/repos.d/wegweiser.repo https://pkg.wegweiser.zone/wegweiser.repo
+sudo zypper install wegweiser
+```
+
+dnf and zypper show the key's fingerprint and ask before they trust it the
+first time. They check the signature of every package and of the index.
+
+### What installing does
+
+The package installs `weg`, the systemd unit and completions for bash, zsh and
+fish. Where there is no `/etc/wegweiser/config.yaml` yet, it writes the example
+there, mode 0600 and owned by root, and from then on leaves the file alone. Each
+release brings its own example to `/usr/share/wegweiser/wegweiser.example.yaml`,
+to compare yours against.
+
+**It starts nothing.** Edit the configuration, then:
+
+```sh
+sudo systemctl enable --now wegweiser
+```
+
+On Ubuntu and Fedora the edit has to include the address. systemd-resolved
+holds `127.0.0.53:53` there, and the default `:53`, which is every address,
+cannot be bound beside it: the server stops with `address already in use`.
+Either give `dns.listen` the address the server answers on, such as
+`192.0.2.1:53`, or switch off resolved's stub listener with
+`DNSStubListener=no` in `/etc/systemd/resolved.conf`. The second changes how
+the machine itself looks names up.
+
+The first start prints an administrator token, [as below](#the-first-start).
+
+### Upgrading
+
+```sh
+sudo apt update && sudo apt upgrade      # or: sudo dnf upgrade, sudo zypper update
+```
+
+A server that was running is restarted on the new binary, and one that was
+stopped stays stopped. If the new one does not come back, the package manager
+says so and finishes anyway, and `journalctl -u wegweiser` says why.
+
+Read the release's notes first. When a release changes the database they say
+so under **Upgrading**: the older release cannot open the database afterwards,
+so the way back is a copy taken before ([the database file](#the-database-file)).
+Installing the older package over it gives a server that refuses to start and
+says so.
+
+In a cluster, the members must not all upgrade at once. [Upgrading a
+cluster](/docs/cluster/#upgrading) says how to hold them and in which order to
+go.
+
+### Removing
+
+`apt remove`, `dnf remove` or `zypper remove` stops the server, disables it,
+and takes the binary and the unit. The configuration stays. `apt purge` takes
+the configuration as well.
+
+The database stays every time. It holds the zones, their whole history and the
+TSIG keys, and a package manager is not where that gets decided. It is in
+`/var/lib/private/wegweiser`, where systemd keeps the state of a service whose
+user it creates; delete it by hand when that is what you mean.
+
+### Moving from an installation by hand
+
+The package takes over the binary and keeps the configuration as it is. The
+unit needs a step of its own: one in `/etc/systemd/system` takes precedence
+over the package's in `/usr/lib/systemd/system`, so the old one would go on
+running unnoticed until the day the two differ.
+
+```sh
+sudo apt install wegweiser          # or: sudo dnf install wegweiser, sudo zypper install wegweiser
+sudo systemctl disable wegweiser
+sudo rm /etc/systemd/system/wegweiser.service
+sudo systemctl daemon-reload
+sudo chmod 600 /etc/wegweiser/config.yaml
+sudo systemctl enable wegweiser
+sudo systemctl restart wegweiser
+```
+
+Disabling it first removes the link that enabled the old unit, which would
+otherwise point at nothing once the file has gone. The database is not touched.
+
+## systemd, by hand
 
 ```sh
 sudo install -m 0755 bin/weg /usr/bin/weg
 sudo install -D -m 0644 packaging/systemd/wegweiser.service /etc/systemd/system/wegweiser.service
-sudo install -D -m 0644 docs/wegweiser.example.yaml /etc/wegweiser/config.yaml
+sudo install -D -m 0600 docs/wegweiser.example.yaml /etc/wegweiser/config.yaml
 sudo systemctl daemon-reload
 sudo systemctl enable --now wegweiser
 ```
+
+### The first start
 
 The first start prints an administrator token once. It is in the journal:
 
@@ -25,8 +151,7 @@ The first start prints an administrator token once. It is in the journal:
 journalctl -u wegweiser | grep weg_
 ```
 
-Put it in the environment and the command line finds the server by itself,
-because it reads the API address out of the same configuration file:
+Put it in the environment and the command line finds the server by itself:
 
 ```sh
 export WEG_TOKEN=weg_…
@@ -34,13 +159,32 @@ weg health
 weg zone list
 ```
 
+It looks for the API address in `/etc/wegweiser/config.yaml`, which only root
+can read. Run as anyone else, it asks `127.0.0.1:8053`, where the API listens
+unless told otherwise. For an API elsewhere, give `--server` or set
+`WEG_SERVER`.
+
 ### What the unit does about privilege
 
 The process runs as a user systemd creates for the lifetime of the unit and
 takes away again (`DynamicUser=yes`), and it holds exactly one capability:
 `CAP_NET_BIND_SERVICE`, for port 53. `CapabilityBoundingSet` stops it acquiring
 any other, and `NoNewPrivileges` stops anything it might exec from doing so
-either.
+either. The package installs the same unit.
+
+A user that exists only while the service runs cannot be given a file, so the
+configuration reaches it as a systemd credential: systemd reads
+`/etc/wegweiser/config.yaml` as root at each start and hands the service a copy
+only the service can read. That is what lets the file be mode 0600, which a
+file holding a [cluster's](/docs/cluster/) secret should be. Without the file
+the service does not start.
+
+Inside a container that runs systemd 252, as Debian 12 and RHEL 9 have it,
+the copy only reaches the service when the container's root mount propagates
+mounts. Where it does not, the server stops with `permission denied` on
+`/run/credentials/wegweiser.service/config.yaml`; `mount --make-rshared /`
+before systemd starts is what changes that. A machine of its own, or a virtual
+one, is not affected.
 
 Beyond that the filesystem is read-only apart from its own state directory, the
 syscall filter is `@system-service` minus `@privileged` and `@resources`, and
@@ -150,7 +294,7 @@ saying so if it may not, and serves the API and the web interface on loopback.
 ## The database file
 
 Everything this server holds is in one SQLite file: zones, records, the whole
-history, the API tokens, the settings. Both shapes above put it in
+history, the API tokens, the settings. Every shape above puts it in
 `/var/lib/wegweiser`.
 
 **Copy it stopped, or copy all of it.** SQLite runs in write-ahead logging

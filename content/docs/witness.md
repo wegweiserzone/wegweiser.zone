@@ -3,7 +3,7 @@ title = "A witness"
 description = "The third vote for two servers: a small program that keeps the cluster's log, answers nothing, and hands leadership to a server whenever it wins an election."
 weight = 102
 group = "Running it"
-version = "0.7.0"
+version = "0.9.0"
 +++
 
 Two DNS servers make no honest [cluster](/docs/cluster/). A majority of two is two, so
@@ -44,9 +44,31 @@ not the same as low-trust: put it somewhere you would put a nameserver.
 
 ## Installing it
 
-Every [release](https://github.com/wegweiserzone/wegwitness/releases) carries a static
-binary for linux/amd64 and linux/arm64, with the example configuration and a sandboxed
-systemd unit beside it. There is an image too:
+From the same package repository as the server, once it is added as
+[Running Wegweiser](/docs/deployment/#packages) shows:
+
+```console
+$ sudo apt install wegwitness      # or: sudo dnf install wegwitness, sudo zypper install wegwitness
+```
+
+The package does what the server's does. It installs the binary and a sandboxed systemd
+unit, writes `/etc/wegwitness/config.yaml` from the example once, mode 0600, and starts
+nothing. The unit reads the file as a systemd credential, so it stays readable by root alone.
+`--join` belongs in a drop-in, which an upgrade leaves alone:
+
+```console
+$ sudo systemctl edit wegwitness
+[Service]
+ExecStart=
+ExecStart=/usr/bin/wegwitness serve --config ${CREDENTIALS_DIRECTORY}/config.yaml --join 192.0.2.1:8054
+$ sudo systemctl enable --now wegwitness
+```
+
+The empty `ExecStart=` clears the unit's own command rather than adding a second one.
+
+Every [release](https://github.com/wegweiserzone/wegwitness/releases) also carries a static
+binary for linux/amd64 and linux/arm64, with the example configuration and the unit beside
+it. There is an image too:
 
 ```console
 $ podman run -d --name wegwitness -p 8054:8054 \
