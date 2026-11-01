@@ -1,0 +1,7 @@
+[wegweiser]
+name=Wegweiser
+baseurl=https://pkg.wegweiser.zone/rpm
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://pkg.wegweiser.zone/signing-key.asc

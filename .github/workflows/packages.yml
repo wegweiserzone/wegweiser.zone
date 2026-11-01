@@ -1,0 +1,154 @@
+name: Packages
+
+# Builds the apt and dnf repository at pkg.wegweiser.zone from the releases of
+# wegweiser and wegwitness, signs it and uploads it (wegweiser's
+# docs/decisions/d54-installed-from-packages.md).
+#
+# Started by hand after a release, never by a push: the signing key is in the
+# `packages` environment, and that environment waits for the maintainer to
+# approve every run. Nothing else in this repository can reach the key.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: packages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish
+    # Pinned rather than latest: the rpm on the runner is what signs the
+    # packages, and a newer one may sign in a format older systems refuse.
+    runs-on: ubuntu-24.04
+    environment: packages
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq apt-utils createrepo-c rpm lftp
+
+      # The fingerprint is committed, so a key swapped in the environment
+      # stops here instead of signing. The public key served beside the
+      # repository is the committed one, checked against the same fingerprint.
+      - name: Signing key
+        env:
+          KEY: ${{ secrets.PKG_SIGNING_KEY }}
+        run: |
+          [ -n "$KEY" ] || { echo "::error::PKG_SIGNING_KEY is not set"; exit 1; }
+          want=$(cat packages/FINGERPRINT)
+          printf '%s\n' "$KEY" | gpg --batch --quiet --import
+          have=$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr/ { print $10; exit }')
+          [ "$have" = "$want" ] ||
+            { echo "::error::the key in PKG_SIGNING_KEY is $have, and packages/FINGERPRINT says $want"; exit 1; }
+          published=$(gpg --show-keys --with-colons packages/signing-key.asc | awk -F: '/^fpr/ { print $10; exit }')
+          [ "$published" = "$want" ] ||
+            { echo "::error::packages/signing-key.asc is $published, and packages/FINGERPRINT says $want"; exit 1; }
+
+      # Every release that is not a pre-release, checked against its own
+      # checksums.txt. A release from before there were packages has none and
+      # is left out by name.
+      - name: Download the releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p in
+          for repo in wegweiserzone/wegweiser wegweiserzone/wegwitness; do
+            tags=$(gh release list --repo "$repo" --exclude-pre-releases --exclude-drafts \
+              --limit 1000 --json tagName --jq '.[].tagName')
+            for tag in $tags; do
+              dir="dl/$repo/$tag"
+              mkdir -p "$dir"
+              gh release download "$tag" --repo "$repo" --dir "$dir" \
+                --pattern '*.deb' --pattern '*.rpm' --pattern checksums.txt
+              if ! ls "$dir"/*.deb >/dev/null 2>&1; then
+                echo "$repo $tag carries no packages; left out"
+                continue
+              fi
+              (
+                cd "$dir"
+                for f in *.deb *.rpm; do
+                  grep -q "  \./$f\$" checksums.txt ||
+                    { echo "::error::$repo $tag: $f is not in checksums.txt"; exit 1; }
+                done
+                sha256sum --check --ignore-missing --quiet checksums.txt
+              )
+              cp "$dir"/*.deb "$dir"/*.rpm in/
+            done
+          done
+          ls in/*.deb >/dev/null 2>&1 || { echo "::error::no release carries packages"; exit 1; }
+          ls in
+
+      - name: Build
+        run: |
+          sh scripts/package-repo.sh in out "$(cat packages/FINGERPRINT)"
+          cp packages/index.html packages/signing-key.asc packages/wegweiser.repo \
+            packages/wegweiser.sources out/
+
+      - name: Configure SSH
+        env:
+          KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          DEPLOY_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          [ -n "$KNOWN_HOSTS" ] || { echo "::error::SSH_KNOWN_HOSTS is not set"; exit 1; }
+          [ -n "$DEPLOY_KEY" ] || { echo "::error::SSH_PRIVATE_KEY is not set"; exit 1; }
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          umask 077
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_deploy
+          ssh-keygen -y -f ~/.ssh/id_deploy > /dev/null \
+            || { echo "::error::SSH_PRIVATE_KEY is not a valid private key"; exit 1; }
+
+      # Four passes, so that a client updating while this runs never reads an
+      # index whose files are not there yet: the packages first, then every
+      # index file but the signed ones that name the rest, then those, and only
+      # then is anything deleted. The first two are built here as trees of
+      # their own, so each pass is a plain mirror.
+      - name: Upload
+        env:
+          HOST: ${{ secrets.SFTP_HOST }}
+          PORT: ${{ secrets.SFTP_PORT }}
+          USER: ${{ secrets.SFTP_USER }}
+          REMOTE: ${{ secrets.PKG_SFTP_PATH }}
+        run: |
+          for name in HOST USER REMOTE; do
+            [ -n "${!name}" ] || { echo "::error::${name} is not set"; exit 1; }
+          done
+          # The site's own document root is one directory over, and this
+          # mirrors with --delete.
+          case "$REMOTE" in
+            */pkg.wegweiser.zone/httpdocs) ;;
+            *) echo "::error::PKG_SFTP_PATH is $REMOTE, which is not pkg.wegweiser.zone's document root"; exit 1 ;;
+          esac
+
+          rsync -a --include='*/' --include='*.deb' --include='*.rpm' --exclude='*' out/ stage-packages/
+          rsync -a --exclude=InRelease --exclude=Release --exclude=Release.gpg \
+            --exclude=repomd.xml --exclude=repomd.xml.asc out/ stage-indexes/
+
+          lftp -c "
+            set sftp:connect-program 'ssh -a -x -i $HOME/.ssh/id_deploy -p ${PORT:-222}';
+            set net:max-retries 2;
+            set net:timeout 20;
+            open -u ${USER}, sftp://${HOST};
+            mirror --reverse --verbose --parallel=4 stage-packages/ ${REMOTE};
+            mirror --reverse --verbose --parallel=4 stage-indexes/ ${REMOTE};
+            mirror --reverse --verbose out/ ${REMOTE};
+            mirror --reverse --delete --verbose \
+                   --exclude '^\.well-known/acme-challenge/' \
+                   out/ ${REMOTE};
+          "
+
+      # What the documentation tells people to do, against what was just
+      # uploaded, with every signature check on.
+      - name: Install from it
+        run: |
+          for image in docker.io/library/debian:12 docker.io/library/ubuntu:24.04 \
+                       docker.io/rockylinux/rockylinux:9 docker.io/library/fedora:latest; do
+            echo "::group::$image"
+            docker run --rm -v "$PWD/scripts:/s:ro" "$image" sh /s/check-package-repo.sh
+            echo "::endgroup::"
+          done
