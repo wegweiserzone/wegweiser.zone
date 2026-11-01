@@ -147,7 +147,8 @@ jobs:
       - name: Install from it
         run: |
           for image in docker.io/library/debian:12 docker.io/library/ubuntu:24.04 \
-                       docker.io/rockylinux/rockylinux:9 docker.io/library/fedora:latest; do
+                       docker.io/rockylinux/rockylinux:9 docker.io/library/fedora:latest \
+                       registry.opensuse.org/opensuse/leap:15.6; do
             echo "::group::$image"
             docker run --rm -v "$PWD/scripts:/s:ro" "$image" sh /s/check-package-repo.sh
             echo "::endgroup::"
