@@ -19,10 +19,23 @@ rm -rf "$out"
 mkdir -p "$out/deb/pool/main" "$out/rpm"
 out=$(cd "$out" && pwd)
 
+# The key vouches for these two and for nothing else that a release might
+# carry, whatever its name says.
+ours() {
+	case "$1" in
+	wegweiser | wegwitness) ;;
+	*)
+		echo "package-repo: $2 is a package named '$1', which is not ours to sign" >&2
+		exit 1
+		;;
+	esac
+}
+
 # apt: one suite, stable, because the binaries are static and the same package
 # installs on every release of every distribution.
 for deb in "$in"/*.deb; do
 	pkg=$(dpkg-deb -f "$deb" Package)
+	ours "$pkg" "$deb"
 	mkdir -p "$out/deb/pool/main/$pkg"
 	cp "$deb" "$out/deb/pool/main/$pkg/"
 done
@@ -53,9 +66,18 @@ gpg --batch --yes --local-user "$key" --armor --detach-sign -o dists/stable/Rele
 # dnf: every package signed, and the metadata as well, so that both gpgcheck
 # and repo_gpgcheck can be on. One directory for both architectures; dnf
 # picks its own.
+for rpm in "$in"/*.rpm; do
+	ours "$(rpm -qp --qf '%{NAME}' "$rpm" 2>/dev/null)" "$rpm"
+done
 cp "$in"/*.rpm "$out/rpm/"
-# Ubuntu's rpm looks for gpg2, which Ubuntu's gnupg does not install.
+# Every run signs every package again, so the signature is made at one fixed
+# moment, the key's own creation plus a second. The same package then comes out
+# byte for byte the same each time, and a client holding yesterday's metadata
+# still finds the file it names. Ubuntu's rpm looks for gpg2, which Ubuntu's
+# gnupg does not install.
+at=$(gpg --list-keys --with-colons "$key" | awk -F: '/^pub/ { print $6 + 1; exit }')
 rpmsign --addsign --define "_gpg_name $key" --define "__gpg $(command -v gpg)" \
+	--define "_gpg_sign_cmd_extra_args --faked-system-time ${at}!" \
 	"$out"/rpm/*.rpm >/dev/null
 createrepo_c --quiet "$out/rpm"
 gpg --batch --yes --local-user "$key" --armor --detach-sign \

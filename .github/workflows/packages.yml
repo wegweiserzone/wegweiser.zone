@@ -50,17 +50,23 @@ jobs:
             { echo "::error::packages/signing-key.asc is $published, and packages/FINGERPRINT says $want"; exit 1; }
 
       # Every release that is not a pre-release, checked against its own
-      # checksums.txt. A release from before there were packages has none and
-      # is left out by name.
+      # checksums.txt. A pre-release is told by its tag, since the release
+      # workflows do not mark one as such. A release from before there were
+      # packages has none and is left out by name. Each package has to carry
+      # the name of the project whose release it came from.
       - name: Download the releases
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p in
           for repo in wegweiserzone/wegweiser wegweiserzone/wegwitness; do
+            name=${repo#*/}
             tags=$(gh release list --repo "$repo" --exclude-pre-releases --exclude-drafts \
               --limit 1000 --json tagName --jq '.[].tagName')
             for tag in $tags; do
+              case "$tag" in
+                *-*) echo "$repo $tag is a pre-release; left out"; continue ;;
+              esac
               dir="dl/$repo/$tag"
               mkdir -p "$dir"
               gh release download "$tag" --repo "$repo" --dir "$dir" \
@@ -72,6 +78,10 @@ jobs:
               (
                 cd "$dir"
                 for f in *.deb *.rpm; do
+                  case "$f" in
+                    "${name}"_*.deb | "${name}"-*.rpm) ;;
+                    *) echo "::error::$repo $tag: $f is not a $name package"; exit 1 ;;
+                  esac
                   grep -q "  \./$f\$" checksums.txt ||
                     { echo "::error::$repo $tag: $f is not in checksums.txt"; exit 1; }
                 done
@@ -103,44 +113,19 @@ jobs:
           ssh-keygen -y -f ~/.ssh/id_deploy > /dev/null \
             || { echo "::error::SSH_PRIVATE_KEY is not a valid private key"; exit 1; }
 
-      # Four passes, so that a client updating while this runs never reads an
-      # index whose files are not there yet: the packages first, then every
-      # index file but the signed ones that name the rest, then those, and only
-      # then is anything deleted. The first two are built here as trees of
-      # their own, so each pass is a plain mirror.
+      # In passes, so that a client updating meanwhile never reads an index
+      # whose files are not there; the script says how.
       - name: Upload
         env:
-          HOST: ${{ secrets.SFTP_HOST }}
-          PORT: ${{ secrets.SFTP_PORT }}
-          USER: ${{ secrets.SFTP_USER }}
+          SFTP_HOST: ${{ secrets.SFTP_HOST }}
+          SFTP_PORT: ${{ secrets.SFTP_PORT }}
+          SFTP_USER: ${{ secrets.SFTP_USER }}
           REMOTE: ${{ secrets.PKG_SFTP_PATH }}
         run: |
-          for name in HOST USER REMOTE; do
+          for name in SFTP_HOST SFTP_USER REMOTE; do
             [ -n "${!name}" ] || { echo "::error::${name} is not set"; exit 1; }
           done
-          # The site's own document root is one directory over, and this
-          # mirrors with --delete.
-          case "$REMOTE" in
-            */pkg.wegweiser.zone/httpdocs) ;;
-            *) echo "::error::PKG_SFTP_PATH is $REMOTE, which is not pkg.wegweiser.zone's document root"; exit 1 ;;
-          esac
-
-          rsync -a --include='*/' --include='*.deb' --include='*.rpm' --exclude='*' out/ stage-packages/
-          rsync -a --exclude=InRelease --exclude=Release --exclude=Release.gpg \
-            --exclude=repomd.xml --exclude=repomd.xml.asc out/ stage-indexes/
-
-          lftp -c "
-            set sftp:connect-program 'ssh -a -x -i $HOME/.ssh/id_deploy -p ${PORT:-222}';
-            set net:max-retries 2;
-            set net:timeout 20;
-            open -u ${USER}, sftp://${HOST};
-            mirror --reverse --verbose --parallel=4 stage-packages/ ${REMOTE};
-            mirror --reverse --verbose --parallel=4 stage-indexes/ ${REMOTE};
-            mirror --reverse --verbose out/ ${REMOTE};
-            mirror --reverse --delete --verbose \
-                   --exclude '^\.well-known/acme-challenge/' \
-                   out/ ${REMOTE};
-          "
+          SSH_KEY="$HOME/.ssh/id_deploy" bash scripts/upload-package-repo.sh out "$REMOTE"
 
       # What the documentation tells people to do, against what was just
       # uploaded, with every signature check on.
